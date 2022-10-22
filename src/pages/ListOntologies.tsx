@@ -19,6 +19,7 @@ import {Option} from "antd/lib/mentions";
 import fileDownload from "js-file-download";
 import {alphabeticalSort} from "../utils/sorter";
 import DataverseService from "../services/DataverseService";
+import { collapseTextChangeRangesAcrossMultipleVersions } from "typescript";
 
 const {Dragger} = Upload;
 const {Column} = Table;
@@ -36,6 +37,7 @@ const ListOntologies = () => {
     const authService = new AuthService();
     const configService = new ConfigService().getConfig();
 
+    let selectedDatafile = undefined;
     const [dataSource, setDataSource] = useState<any>([])
     const [data, setData] = useState<any>([]);
     const [dataRepository, setDataRepository] = useState<DataVerseSpace[]>([]);
@@ -120,7 +122,7 @@ const ListOntologies = () => {
     }
 
     const dataverseSearch = () => {
-        const filter = 'xlsx';      
+        const filter = 'owl';      
 
         dataverseService.exploreDataverse(
             dataVerseSearchForm.getFieldValue('dataverse_url'),
@@ -134,12 +136,12 @@ const ListOntologies = () => {
     }
 
     const selectedRepositoryFile = (idFile: string) => { 
-        window.location.href = 'https://example.com/1234'; 
-        dataverseService.download(
+        dataverseService.createOntologyFromFile(
             dataVerseSearchForm.getFieldValue('dataverse_url'),
             dataVerseSearchForm.getFieldValue('repository_name'),
-            idFile
-            );
+            idFile,
+            createForm.getFieldValue("ontology_name")  
+            ); 
     }
 
 
@@ -189,12 +191,12 @@ const ListOntologies = () => {
                     </Col>
                     <Col span={2}/>
                     <Col span={10}>
-                        <Tabs>
+                        <Tabs >
                         <Tabs.TabPane tab="Upload from computer" key="item-1">
                         <Form.Item name={"file"} label={"Upload Ontology"}
                                    rules={[{required: true}]}>
                             <Dragger accept={".owl"}
-                                     disabled={fileAccess == ""}
+                                     disabled={fileAccess === "" || createForm.getFieldValue("ontology_name") === undefined}
                                      action={configService.api_url + "/ontology/" + createForm.getFieldValue("ontology_name")}
                                      headers={{Authorization: "Bearer " + authService.hasCredentials()}}
                                      onChange={onChangeDragger}>
@@ -212,7 +214,7 @@ const ListOntologies = () => {
 
                         </Tabs.TabPane>
                         <Tabs.TabPane tab="Download from Dataverse" key="item-2">
-                            <Form form={dataVerseSearchForm} layout={"vertical"} onFinish={dataverseSearch}>
+                            <Form form={dataVerseSearchForm} layout={"vertical"} onFinish={dataverseSearch} disabled={createForm.getFieldValue("ontology_name") === undefined}>
                                 <Row>
                                     <Col span={50}>
                                         <Form.Item name={"dataverse_url"} label={"Dataverse Url"} rules={[{required: true}]} hasFeedback>
@@ -246,12 +248,13 @@ const ListOntologies = () => {
                                     itemKey="datafile_id"                
                                 >
                                     {(item: DataVerseSpace) => (
-                                    <List.Item onClick={() => window.location.href=`${configService.api_url}/dataverses/datafile?url=${dataVerseSearchForm.getFieldValue('dataverse_url')}&name=${dataVerseSearchForm.getFieldValue('repository_name')}&id=${item.datafile_id}`}
+                                    <List.Item onClick={() => {selectedRepositoryFile(item.datafile_id)}}
                                         key={item.datafile_id}
                                         id={item.datafile_id}
                                         >
                                         <List.Item.Meta                                       
-                                        title={<a href={`${configService.api_url}/dataverses/datafile?url=${dataVerseSearchForm.getFieldValue('dataverse_url')}&name=${dataVerseSearchForm.getFieldValue('repository_name')}&id=${item.datafile_id}`}>{item.filename}</a>}                                                                    
+                                        title={item.filename}                                                                    
+                                        // title={<a href={`${configService.api_url}/dataverses/datafile?url=${dataVerseSearchForm.getFieldValue('dataverse_url')}&name=${dataVerseSearchForm.getFieldValue('repository_name')}&id=${item.datafile_id}`}>{item.filename}</a>}                                                                    
                                         />                                   
                                     </List.Item>
                                     )}
