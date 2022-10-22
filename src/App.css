@@ -22,3 +22,8 @@
 .steps-action {
     margin-top: 24px;
 }
+
+.ant-list-item:hover {
+    background-color: rgb(175, 173, 173);
+    cursor: crosshair;
+  }
