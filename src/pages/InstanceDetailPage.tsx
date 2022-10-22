@@ -1,6 +1,7 @@
 import {useNavigate, useParams} from "react-router-dom";
 import React, {useEffect, useState} from "react";
 import OntologyService from "../services/OntologyService";
+import VirtualList from 'rc-virtual-list';
 import {
     Button,
     Card,
@@ -16,7 +17,9 @@ import {
     Space,
     Switch,
     Table,
+    Tabs,
     Tag,
+    List,
     Tooltip,
     Upload
 } from "antd";
@@ -47,6 +50,8 @@ import AuthService from "../services/AuthService";
 import FileService from "../services/FileService";
 import fileDownload from 'js-file-download';
 import MappingService from "../services/MappingService";
+import DataverseService from "../services/DataverseService";
+import DataVerseSpace from "../interfaces/Dataverse-space.interface";
 
 const {Column} = Table;
 const {Meta} = Card;
@@ -61,9 +66,12 @@ const InstanceDetailPage = () => {
     const instanceService = new InstanceService();
     const fileService = new FileService();
     const mappingService = new MappingService();
-    const configService = new ConfigService().getConfig()
-    const authService = new AuthService()
+    const configService = new ConfigService().getConfig();
+    const authService = new AuthService();
+    const dataverseService = new DataverseService();
 
+    const [dataRepository, setDataRepository] = useState<DataVerseSpace[]>([]);
+    
     // Variables
     const [classes, setClasses] = useState<any>([]);
     const [instance, setInstance] = useState<any>({});
@@ -86,7 +94,8 @@ const InstanceDetailPage = () => {
     // Forms
     const [classesForm] = useForm();
     const [editForm] = useForm();
-    const [uploadForm] = useForm()
+    const [uploadForm] = useForm();
+    const [dataVerseSearchForm] = useForm();
 
     // loading
     const [loading, setLoading] = useState<any>({instances: false, classes: false});
@@ -136,6 +145,22 @@ const InstanceDetailPage = () => {
         })
     }
 
+    const selectedRepositoryFile = (idFile: string, filename: string) => { 
+        dataverseService.registerFileFromRepository(
+            dataVerseSearchForm.getFieldValue('dataverse_url'),
+            dataVerseSearchForm.getFieldValue('repository_name'),
+            idFile
+            ).then((res) => {        
+                let aux_files = Array.from(new Set(instance.filenames.concat([filename])));
+
+                instanceService.editInstances(params.id, {filenames: aux_files}).then((res) => {
+                    setInstance(res.data.instance);
+                    message.success(res.data.successful)
+                }).catch(err => message.error(err.toString()))
+                closeUploadModal();
+                
+            });       
+        }
 
     const getClasses = (id: string) => {
         setLoading({...loading, classes: true})
@@ -348,6 +373,20 @@ const InstanceDetailPage = () => {
 
     }
 
+    const dataverseSearch = () => {
+        const filter = 'csv';      
+
+        dataverseService.exploreDataverse(
+            dataVerseSearchForm.getFieldValue('dataverse_url'),
+            dataVerseSearchForm.getFieldValue('repository_name'),
+            filter
+        ).then((res) => {          
+            setDataRepository(dataRepository.concat(res.data.datafiles));   
+        }).catch((err) => {
+            message.error(err.toString())
+        });
+    }
+
     return (<>
         {/* Classes Modal */}
         <Modal visible={visibleClasses} onCancel={closeClasses} onOk={classesForm.submit} width={"50%"}>
@@ -420,37 +459,88 @@ const InstanceDetailPage = () => {
         <Modal width={"80vh"} visible={visibleUpload}
                onCancel={closeUploadModal}
                onOk={uploadForm.submit}>
-            <Form form={uploadForm} layout={"vertical"} onFinish={onFinishUpload}>
-                <Form.Item name={"filenames"}>
-                    <Dragger
-                        style={{marginTop: "2vh"}}
-                        accept={".csv"}
-                        action={configService.api_url + "/files/upload"}
-                        headers={{Authorization: "Bearer " + authService.hasCredentials()}}
-                        onChange={onChangeDragger}
-                        beforeUpload={file => {
-                            const reader = new FileReader();
+            <Tabs >
+                <Tabs.TabPane tab="Upload from computer" key="item-1">
+                    <Form form={uploadForm} layout={"vertical"} onFinish={onFinishUpload}>
+                        <Form.Item name={"filenames"}>
+                            <Dragger
+                                style={{marginTop: "2vh"}}
+                                accept={".csv"}
+                                action={configService.api_url + "/files/upload"}
+                                headers={{Authorization: "Bearer " + authService.hasCredentials()}}
+                                onChange={onChangeDragger}
+                                beforeUpload={file => {
+                                    const reader = new FileReader();
 
-                            reader.onload = (e: any) => {
-                                console.log(e.target.result);
-                            };
-                            reader.readAsText(file);
+                                    reader.onload = (e: any) => {
+                                        console.log(e.target.result);
+                                    };
+                                    reader.readAsText(file);
 
-                            // Prevent upload
-                            return false;
-                        }}>
-                        <p className="ant-upload-drag-icon">
-                            <InboxOutlined/>
-                        </p>
-                        <p className="ant-upload-text">Click or drag file to this area to upload</p>
-                        <p className="ant-upload-hint">
-                            Support for a single or bulk upload. Strictly prohibit from uploading company
-                            data or other
-                            band files.
-                        </p>
-                    </Dragger>
-                </Form.Item>
-            </Form>
+                                    // Prevent upload
+                                    return false;
+                                }}>
+                                <p className="ant-upload-drag-icon">
+                                    <InboxOutlined/>
+                                </p>
+                                <p className="ant-upload-text">Click or drag file to this area to upload</p>
+                                <p className="ant-upload-hint">
+                                    Support for a single or bulk upload. Strictly prohibit from uploading company
+                                    data or other
+                                    band files.
+                                </p>
+                            </Dragger>
+                        </Form.Item>
+                    </Form>
+                </Tabs.TabPane>
+                <Tabs.TabPane tab="Download from Dataverse" key="item-2">
+                            <Form form={dataVerseSearchForm} layout={"vertical"} onFinish={dataverseSearch}>
+                                <Row>
+                                    <Col span={50}>
+                                        <Form.Item name={"dataverse_url"} label={"Dataverse Url"} rules={[{required: true}]} hasFeedback>
+                                            <Input                                                         
+                                                placeholder="https://dataverse.csuc.cat" 
+                                                id="dataverseUrl"                                      
+                                                />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <Row>
+                                    <Col span={10}>
+                                        <Form.Item name={"repository_name"} label={"Repository Name"} rules={[{required: true}]} hasFeedback>
+                                            <Input  placeholder="udl" id="repositoryName"></Input>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <Row>
+                                    <Col span={10}>
+                                        <Button type="primary" icon={<SearchOutlined />} onClick={() => {dataverseSearch()}}>
+                                            Search
+                                        </Button>
+                                    </Col>
+                                </Row>
+                            </Form>
+                            <List>
+                                <VirtualList
+                                    data={dataRepository}
+                                    height={200}
+                                    itemHeight={47}
+                                    itemKey="datafile_id"                
+                                >
+                                    {(item: DataVerseSpace) => (
+                                    <List.Item onClick={() => {selectedRepositoryFile(item.datafile_id, item.filename)}}
+                                        key={item.datafile_id}
+                                        id={item.datafile_id}
+                                        >
+                                        <List.Item.Meta                                       
+                                        title={item.filename}                                                                    
+                                        />                                   
+                                    </List.Item>
+                                    )}
+                                </VirtualList>
+                            </List>
+                </Tabs.TabPane>
+            </Tabs>
 
         </Modal>
 

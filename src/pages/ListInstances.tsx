@@ -12,6 +12,7 @@ import {
     Select,
     Space,
     Table, Tag,
+    Tabs,
     Tooltip,
     Upload
 } from "antd";
@@ -177,22 +178,28 @@ const MyInstancesPage = () => {
                         </Col>
                         <Col span={2}/>
                         <Col span={10}>
-                            <Form.Item name={"upload_file"} label={"Upload Data"} rules={[{required: true}]}>
-                                <Dragger accept={".csv"}
-                                         action={configService.api_url + "/files/upload"}
-                                         headers={{Authorization: "Bearer " + authService.hasCredentials()}}
-                                         onChange={onChangeDragger}>
-                                    <p className="ant-upload-drag-icon">
-                                        <InboxOutlined/>
-                                    </p>
-                                    <p className="ant-upload-text">Click or drag file to this area to upload</p>
-                                    <p className="ant-upload-hint">
-                                        Support for a single or bulk upload. Strictly prohibit from uploading company
-                                        data or other
-                                        band files.
-                                    </p>
-                                </Dragger>
-                            </Form.Item>
+                            <Tabs >
+                            <Tabs.TabPane tab="Upload from computer" key="item-1">
+                                <Form.Item name={"upload_file"} label={"Upload Data"} rules={[{required: true}]}>
+                                    <Dragger accept={".csv"}
+                                            action={configService.api_url + "/files/upload"}
+                                            headers={{Authorization: "Bearer " + authService.hasCredentials()}}
+                                            onChange={onChangeDragger}>
+                                        <p className="ant-upload-drag-icon">
+                                            <InboxOutlined/>
+                                        </p>
+                                        <p className="ant-upload-text">Click or drag file to this area to upload</p>
+                                        <p className="ant-upload-hint">
+                                            Support for a single or bulk upload. Strictly prohibit from uploading company
+                                            data or other
+                                            band files.
+                                        </p>
+                                    </Dragger>
+                                </Form.Item>
+                        </Tabs.TabPane>
+                        <Tabs.TabPane tab="Download from Dataverse" key="item-2">
+                        </Tabs.TabPane>
+                        </Tabs>
                         </Col>
                     </Row>
                 </Form>

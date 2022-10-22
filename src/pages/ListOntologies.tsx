@@ -20,16 +20,11 @@ import fileDownload from "js-file-download";
 import {alphabeticalSort} from "../utils/sorter";
 import DataverseService from "../services/DataverseService";
 import { collapseTextChangeRangesAcrossMultipleVersions } from "typescript";
+import DataVerseSpace from "../interfaces/Dataverse-space.interface";
 
 const {Dragger} = Upload;
 const {Column} = Table;
 
-interface DataVerseSpace {
-    datafile_id: string;
-    filename: string;
-    label: string;
-    pid: string;
-  }
 
 const ListOntologies = () => {
     const ontologyService = new OntologyService();
@@ -37,7 +32,6 @@ const ListOntologies = () => {
     const authService = new AuthService();
     const configService = new ConfigService().getConfig();
 
-    let selectedDatafile = undefined;
     const [dataSource, setDataSource] = useState<any>([])
     const [data, setData] = useState<any>([]);
     const [dataRepository, setDataRepository] = useState<DataVerseSpace[]>([]);
