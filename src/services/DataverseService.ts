@@ -15,7 +15,7 @@ class DataverseService {
         const args = {
             'url': url,
             'name': name,
-            'filter': filter
+            'filter_by': filter
         };
 
         return axios.get(this.configService.getConfig().api_url + `/dataverses/`, {
@@ -44,6 +44,24 @@ class DataverseService {
         });
        
 
+    }
+
+    public createOntologyFromFile(url: string, name: string, idFile: string, ontologyName: string){
+        const headers = {
+            'Authorization': 'Bearer ' + this.authService.hasCredentials()           
+        };
+
+        const args = {
+            'url': url,
+            'name': name,
+            'id': idFile,
+            'ontology_name': ontologyName
+        };
+
+        return axios.get(this.configService.getConfig().api_url + `/dataverses/ontology/`, {
+            headers: headers,
+            params: args
+        });
     }
 }
 
