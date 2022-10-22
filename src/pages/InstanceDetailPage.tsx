@@ -13,7 +13,8 @@ import {
     Progress,
     Row,
     Select,
-    Space, Switch,
+    Space,
+    Switch,
     Table,
     Tag,
     Tooltip,
@@ -22,9 +23,9 @@ import {
 import InstanceService from "../services/InstanceService";
 import {
     AppstoreAddOutlined,
-    ClearOutlined,
     CaretRightOutlined,
     CheckOutlined,
+    ClearOutlined,
     CloseOutlined,
     CloudDownloadOutlined,
     CloudUploadOutlined,
@@ -32,10 +33,11 @@ import {
     FileSearchOutlined,
     InboxOutlined,
     LinkOutlined,
-    LockOutlined, PlusOutlined,
+    LockOutlined,
+    PlusOutlined,
+    RollbackOutlined,
     SearchOutlined,
     SettingOutlined,
-    RollbackOutlined,
     UnlockOutlined
 } from '@ant-design/icons';
 import {useForm} from "antd/lib/form/Form";
@@ -65,9 +67,11 @@ const InstanceDetailPage = () => {
     // Variables
     const [classes, setClasses] = useState<any>([]);
     const [instance, setInstance] = useState<any>({});
+    const [currentOntology, setCurrentOntology] = useState<any>({});
     const [generateConfig, setGenerateConfig] = useState<any>([]);
     const [generateOptions, setGenerateOptions] = useState<any>([]);
     const [relations, setRelations] = useState<any>([]);
+    const [ontologies, setOntologies] = useState<any>([]);
 
     // Search
     const [classSearch, setClassSearch] = useState<any>([])
@@ -90,6 +94,7 @@ const InstanceDetailPage = () => {
 
     useEffect(() => {
         getInstanceInfo();
+
     }, []);
 
     const getInstanceInfo = () => {
@@ -98,6 +103,7 @@ const InstanceDetailPage = () => {
         instanceService.getInstance(params.id).then((res) => {
 
             let data = res.data.data
+            getOntologyInUse(data.current_ontology);
             getClasses(data.current_ontology);
             setInstance(data)
 
@@ -116,6 +122,20 @@ const InstanceDetailPage = () => {
             setLoading({...loading, instances: false})
         })
     }
+
+    const getOntologyInUse = (ontologyId: string) => {
+        ontologyService.getOntologies().then(res => {
+            setOntologies(res.data.data.map((i: any) => {
+                if (i._id === ontologyId) {
+                    setCurrentOntology({value: i._id, label: i.ontology_name})
+                }
+                return {value: i._id, label: i.ontology_name}
+            }))
+        }).catch((err) => {
+            message.error(err.toString())
+        })
+    }
+
 
     const getClasses = (id: string) => {
         setLoading({...loading, classes: true})
@@ -256,7 +276,7 @@ const InstanceDetailPage = () => {
     const startMapping = (_class: string) => {
         navigate('mapping', {
             state: {
-                ref: params.id,
+                _id: params.id,
                 _class: _class,
                 subject: instance.mapping[_class].subject,
                 current_file: instance.mapping[_class].fileSelected,
@@ -270,7 +290,7 @@ const InstanceDetailPage = () => {
     const startLink = (relation: any) => {
         navigate('link', {
             state: {
-                ref: params.id,
+                _id: params.id,
                 relation: relation
             }
         })
@@ -284,7 +304,7 @@ const InstanceDetailPage = () => {
     }
 
     const generate = () => {
-        mappingService.generateYARRML({ref: params.id, classes: generateConfig}).then((res) => {
+        mappingService.generateYARRML({_id: params.id, classes: generateConfig}).then((res) => {
             message.success("The YARRRML file has been generated successfully.")
             fileDownload(res.data.yaml, `${params.id}.yaml`)
         }).catch(err => message.error(err.toString()))
@@ -361,14 +381,31 @@ const InstanceDetailPage = () => {
             onOk={editForm.submit}>
 
             <Form form={editForm} layout={"vertical"}
-                  initialValues={{name: instance.name, description: instance.description}}
+                  initialValues={{
+                      name: instance.name,
+                      description: instance.description,
+                      current_ontology: currentOntology?.value
+                  }}
                   onFinish={onFinishEditInstance}>
                 <Row>
                     <Col span={10}>
                         <Form.Item name={"name"} label={"Name"} rules={[{required: true}]}>
                             <Input placeholder={"Instance Name"}/>
                         </Form.Item>
+                        <Form.Item name={"current_ontology"} label={"Ontology"} rules={[{required: true}]}>
+                            <Select options={ontologies}
+                                    onChange={(value, option: any) => {
+                                        getOntologyInUse(value)
+                                        instanceService.initInstance(params.id, {ontology_id: value}).then(() => {
+                                            setClassSearch([]);
+                                            getClasses(value);
 
+                                            setRelationSearch([]);
+                                            getRelations({...instance, current_ontology: value});
+                                        }).catch(err => message.error(err.toString()));
+                                    }
+                                    }/>
+                        </Form.Item>
                     </Col>
                     <Col span={2}/>
                     <Col span={10}>
@@ -387,10 +424,21 @@ const InstanceDetailPage = () => {
                 <Form.Item name={"filenames"}>
                     <Dragger
                         style={{marginTop: "2vh"}}
-                        accept={".json,.csv"}
+                        accept={".csv"}
                         action={configService.api_url + "/files/upload"}
                         headers={{Authorization: "Bearer " + authService.hasCredentials()}}
-                        onChange={onChangeDragger}>
+                        onChange={onChangeDragger}
+                        beforeUpload={file => {
+                            const reader = new FileReader();
+
+                            reader.onload = (e: any) => {
+                                console.log(e.target.result);
+                            };
+                            reader.readAsText(file);
+
+                            // Prevent upload
+                            return false;
+                        }}>
                         <p className="ant-upload-drag-icon">
                             <InboxOutlined/>
                         </p>
@@ -510,8 +558,9 @@ const InstanceDetailPage = () => {
                               key={"download"}/></Tooltip>]}>
                     <Meta title={<b>{instance.name}</b>} description={instance.description}/>
                     <div style={{marginTop: "1%"}}>
-                        <h4><b>{instance.createdAt}</b></h4>
-                        <h4>Created By: <b>{instance.createdBy}</b></h4>
+                        <h6><b>Created At:</b> {instance.createdAt}</h6>
+                        <h4><Tag color={"green"}
+                                 key={currentOntology?.value}>{currentOntology?.label}</Tag></h4>
                         <Progress percent={instance.status} strokeColor="#52c41a"/>
 
                         <Row justify={"center"} gutter={10} style={{alignItems: "center"}}>
