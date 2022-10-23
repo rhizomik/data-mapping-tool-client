@@ -45,6 +45,10 @@ const ListOntologies = () => {
     const [editForm] = useForm();
     const [dataVerseSearchForm] = useForm();
 
+    const [isSearchStarted,setIsSearchStarted] = useState<boolean>();
+    const [isSearchFinished,setIsSearchFinished] = useState<boolean>();
+
+
     const gatherOntologies = () => {
         setLoading({...loading, ontologies: true})
 
@@ -115,14 +119,23 @@ const ListOntologies = () => {
         value === '' ? setDataSource(data) : setDataSource(data.filter((i: any) => i[property].includes(value)))
     }
 
+    const cleanList = () => {
+        setDataRepository([]);
+        setIsSearchFinished(false);
+        setIsSearchStarted(false);
+    }
+
     const dataverseSearch = () => {
-        const filter = 'owl';      
+        const filter = 'owl';   
+        setIsSearchStarted(true);
 
         dataverseService.exploreDataverse(
             dataVerseSearchForm.getFieldValue('dataverse_url'),
             dataVerseSearchForm.getFieldValue('repository_name'),
             filter
         ).then((res) => {          
+            setIsSearchStarted(false);
+            setIsSearchFinished(true);
             setDataRepository(dataRepository.concat(res.data.datafiles));   
         }).catch((err) => {
             message.error(err.toString())
@@ -212,7 +225,8 @@ const ListOntologies = () => {
                                 <Row>
                                     <Col span={50}>
                                         <Form.Item name={"dataverse_url"} label={"Dataverse Url"} rules={[{required: true}]} hasFeedback>
-                                            <Input                                                         
+                                            <Input
+                                                onKeyUp={() => cleanList()}                                                    
                                                 placeholder="https://dataverse.csuc.cat" 
                                                 id="dataverseUrl"                                      
                                                 />
@@ -221,19 +235,20 @@ const ListOntologies = () => {
                                 </Row>
                                 <Row>
                                     <Col span={10}>
-                                        <Form.Item name={"repository_name"} label={"Repository Name"} rules={[{required: true}]} hasFeedback>
-                                            <Input  placeholder="udl" id="repositoryName"></Input>
+                                        <Form.Item name={"repository_name"} label={"Dataverse Name"} rules={[{required: true}]} hasFeedback>
+                                            <Input onKeyUp={() => cleanList()}  placeholder="udl" id="repositoryName"></Input>
                                         </Form.Item>
                                     </Col>
                                 </Row>
                                 <Row>
                                     <Col span={10}>
-                                        <Button type="primary" icon={<SearchOutlined />} onClick={() => {dataverseSearch()}}>
+                                        <Button type="primary" disabled={isSearchStarted} icon={<SearchOutlined />} onClick={() => {dataverseSearch()}}>
                                             Search
                                         </Button>
                                     </Col>
                                 </Row>
                             </Form>
+                            {dataRepository.length > 0?
                             <List>
                                 <VirtualList
                                     data={dataRepository}
@@ -248,12 +263,17 @@ const ListOntologies = () => {
                                         >
                                         <List.Item.Meta                                       
                                         title={item.filename}                                                                    
-                                        // title={<a href={`${configService.api_url}/dataverses/datafile?url=${dataVerseSearchForm.getFieldValue('dataverse_url')}&name=${dataVerseSearchForm.getFieldValue('repository_name')}&id=${item.datafile_id}`}>{item.filename}</a>}                                                                    
                                         />                                   
                                     </List.Item>
                                     )}
                                 </VirtualList>
                             </List>
+                           : 
+                           <span></span>            
+                           }
+                           {
+                            isSearchFinished?<div>No .owl files found </div>:<div></div>
+                           }
                         </Tabs.TabPane>
                         </Tabs>
                     </Col>

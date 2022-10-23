@@ -97,6 +97,9 @@ const InstanceDetailPage = () => {
     const [uploadForm] = useForm();
     const [dataVerseSearchForm] = useForm();
 
+    const [isSearchStarted,setIsSearchStarted] = useState<boolean>();
+    const [isSearchFinished,setIsSearchFinished] = useState<boolean>();
+
     // loading
     const [loading, setLoading] = useState<any>({instances: false, classes: false});
 
@@ -369,18 +372,28 @@ const InstanceDetailPage = () => {
     }
 
     const cleanAll = () => {
-        classesForm.resetFields(['select'])
-
+        classesForm.resetFields(['select']);
+        setDataRepository([]);
     }
 
+    const cleanList = () => {
+        setDataRepository([]);
+        setIsSearchFinished(false);
+        setIsSearchStarted(false);
+    }
+
+
     const dataverseSearch = () => {
-        const filter = 'csv';      
+        const filter = 'csv';  
+        setIsSearchStarted(true);    
 
         dataverseService.exploreDataverse(
             dataVerseSearchForm.getFieldValue('dataverse_url'),
             dataVerseSearchForm.getFieldValue('repository_name'),
             filter
         ).then((res) => {          
+            setIsSearchStarted(false);
+            setIsSearchFinished(true);
             setDataRepository(dataRepository.concat(res.data.datafiles));   
         }).catch((err) => {
             message.error(err.toString())
@@ -498,7 +511,8 @@ const InstanceDetailPage = () => {
                                 <Row>
                                     <Col span={50}>
                                         <Form.Item name={"dataverse_url"} label={"Dataverse Url"} rules={[{required: true}]} hasFeedback>
-                                            <Input                                                         
+                                            <Input                  
+                                                onKeyUp={() => cleanList()}                                        
                                                 placeholder="https://dataverse.csuc.cat" 
                                                 id="dataverseUrl"                                      
                                                 />
@@ -507,19 +521,23 @@ const InstanceDetailPage = () => {
                                 </Row>
                                 <Row>
                                     <Col span={10}>
-                                        <Form.Item name={"repository_name"} label={"Repository Name"} rules={[{required: true}]} hasFeedback>
-                                            <Input  placeholder="udl" id="repositoryName"></Input>
+                                        <Form.Item name={"repository_name"} label={"Dataverse name"} rules={[{required: true}]} hasFeedback>
+                                            <Input
+                                             onKeyUp={() => cleanList()}    
+                                             placeholder="udl" 
+                                             id="repositoryName"/>
                                         </Form.Item>
                                     </Col>
                                 </Row>
                                 <Row>
                                     <Col span={10}>
-                                        <Button type="primary" icon={<SearchOutlined />} onClick={() => {dataverseSearch()}}>
+                                        <Button type="primary" disabled={isSearchStarted} icon={<SearchOutlined />} onClick={() => {dataverseSearch()}}>
                                             Search
                                         </Button>
                                     </Col>
                                 </Row>
                             </Form>
+                            {dataRepository.length > 0?
                             <List>
                                 <VirtualList
                                     data={dataRepository}
@@ -539,6 +557,10 @@ const InstanceDetailPage = () => {
                                     )}
                                 </VirtualList>
                             </List>
+                            :<span></span> }
+                            {
+                                isSearchFinished?<div>No .csv files found </div>:<div></div>
+                            }
                 </Tabs.TabPane>
             </Tabs>
 
