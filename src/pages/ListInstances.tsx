@@ -14,7 +14,8 @@ import {
     Table, Tag,
     Tabs,
     Tooltip,
-    Upload
+    Upload,
+    Checkbox
 } from "antd";
 import {
     BuildOutlined,
@@ -51,6 +52,8 @@ const MyInstancesPage = () => {
     const [dataSourceLoading, setDataSourceLoading] = useState(false);
     const [searchInput] = useState("");
     const [visible, setVisible] = useState(false);
+    const [isSuggestion, setSuggestion] = useState(false);
+
 
     // Form
     const [form] = useForm();
@@ -61,9 +64,13 @@ const MyInstancesPage = () => {
         });
 
         delete values.upload_file;
+        values['suggest_ontology'] = isSuggestion;
         instanceService.createInstances(values).then((res) => {
             const instance = res.data.instance
-            instanceService.initInstance(instance._id, {ontology_id: instance.current_ontology}).catch(err => message.error(err.toString()));
+            instanceService.initInstance(instance._id, {
+                ontology_id: instance.current_ontology,
+                suggest_ontology: isSuggestion
+            }).catch(err => message.error(err.toString()));
             gatherInstances();
             closeModal();
             message.success("The instances has been created successfully.")
@@ -147,6 +154,10 @@ const MyInstancesPage = () => {
         }
     }
 
+    const isSuggest = (e:any) => {
+        setSuggestion(e.target.checked);  
+    }
+
     return (<Fragment>
 
             <Modal
@@ -166,12 +177,15 @@ const MyInstancesPage = () => {
                             <Form.Item name={"description"} label={"Description"}>
                                 <Input.TextArea showCount maxLength={280}/>
                             </Form.Item>
-
-                            <Form.Item name={"current_ontology"} label={"Ontology"} rules={[{required: true}]}
+                            <Form.Item name={"suggest_ontology"} label={"LinkedData"} hasFeedback>                                
+                                <Checkbox onChange={isSuggest}/>
+                                <label> Suggest ontologies from LinkedData</label>
+                            </Form.Item>                            
+                            <Form.Item name={"current_ontology"}                                         
+                                        label={"Ontology"} 
+                                        rules={[{required: false}]}
                                        hasFeedback>
-                                <Select loading={ontologies.length == 0} options={ontologies}>
-
-
+                                <Select disabled={isSuggestion} loading={ontologies.length == 0} options={ontologies}>
                                 </Select>
                             </Form.Item>
 
@@ -307,3 +321,5 @@ const MyInstancesPage = () => {
 }
 
 export default MyInstancesPage;
+
+

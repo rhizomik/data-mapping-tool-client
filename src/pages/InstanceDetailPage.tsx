@@ -21,7 +21,8 @@ import {
     Tag,
     List,
     Tooltip,
-    Upload
+    Upload,
+    Checkbox
 } from "antd";
 import InstanceService from "../services/InstanceService";
 import {
@@ -52,6 +53,7 @@ import fileDownload from 'js-file-download';
 import MappingService from "../services/MappingService";
 import DataverseService from "../services/DataverseService";
 import DataVerseSpace from "../interfaces/Dataverse-space.interface";
+import SuggestionService from "../services/SuggestionService";
 
 const {Column} = Table;
 const {Meta} = Card;
@@ -64,6 +66,7 @@ const InstanceDetailPage = () => {
     // Services
     const ontologyService = new OntologyService();
     const instanceService = new InstanceService();
+    const suggestionService = new SuggestionService();
     const fileService = new FileService();
     const mappingService = new MappingService();
     const configService = new ConfigService().getConfig();
@@ -115,8 +118,11 @@ const InstanceDetailPage = () => {
         instanceService.getInstance(params.id).then((res) => {
 
             let data = res.data.data
-            getOntologyInUse(data.current_ontology);
-            getClasses(data.current_ontology);
+            if(!data["suggest_ontology"]){
+                getOntologyInUse(data.current_ontology);
+                getClasses(data.current_ontology);
+            }
+
             setInstance(data)
 
             // generate select init values
@@ -126,7 +132,9 @@ const InstanceDetailPage = () => {
             }));
 
             setClassSearch(data.classes_to_map);
-            getRelations(data)
+            if(!data["suggest_ontology"]){
+                getRelations(data)
+            }
             setLoading({...loading, instances: false})
 
         }).catch((err) => {
@@ -211,7 +219,9 @@ const InstanceDetailPage = () => {
         let newInstance = {...instance, classes_to_map: values}
 
         setInstance(newInstance)
-        getRelations(newInstance)
+        if(!newInstance['suggest_ontology']){
+            getRelations(newInstance)
+        }
         setClassSearch(values)
         closeClasses();
 
@@ -302,12 +312,13 @@ const InstanceDetailPage = () => {
     // Mapping
 
     const startMapping = (_class: string) => {
+        console.log(instance);
         navigate('mapping', {
             state: {
                 _id: params.id,
                 _class: _class,
-                subject: instance.mapping[_class].subject,
-                current_file: instance.mapping[_class].fileSelected,
+                subject: (!instance['suggest_ontology']) ? instance.mapping[_class].subject: '',
+                current_file: (!instance['suggest_ontology']) ? instance.mapping[_class].fileSelected: instance['filenames'][0],
                 files: instance.filenames.map((i: any) => {
                     return {value: i, label: i}
                 })
@@ -383,6 +394,22 @@ const InstanceDetailPage = () => {
     }
 
 
+    const suggestClasses = (e: any) => {       
+        suggestionService.getSuggestions(e.target.value).then((res) => {
+            const results = res.data.results;
+            const listOfSuggestions: Array<{}> = [];
+
+            Array.prototype.forEach.call(results, element => {
+                const name = element['prefixedName'][0];
+                listOfSuggestions.push({value:name, label:name})           
+              });
+            setClasses(listOfSuggestions);
+
+        });
+    }
+
+
+
     const dataverseSearch = () => {
         const filter = 'csv';  
         setIsSearchStarted(true);    
@@ -404,11 +431,14 @@ const InstanceDetailPage = () => {
         {/* Classes Modal */}
         <Modal visible={visibleClasses} onCancel={closeClasses} onOk={classesForm.submit} width={"50%"}>
             <Form layout={"vertical"} form={classesForm} onFinish={onFinishClasses}>
+                <Form.Item name={"suggest"} label={"suggestions"} rules={[{required: false}]}>
+                        <Input onChange={suggestClasses}/>
+                </Form.Item>   
                 <Form.Item name={"select"} label={"Classes"} rules={[{required: true}]}>
-                    <Select mode="multiple"
+                    <Select mode="multiple"                      
                             placeholder="Select the class/es that you would like to map."
                             options={classes}/>
-                </Form.Item>
+                </Form.Item>   
             </Form>
             <Divider/>
             <Space size={"middle"}>
@@ -444,7 +474,7 @@ const InstanceDetailPage = () => {
                         <Form.Item name={"name"} label={"Name"} rules={[{required: true}]}>
                             <Input placeholder={"Instance Name"}/>
                         </Form.Item>
-                        <Form.Item name={"current_ontology"} label={"Ontology"} rules={[{required: true}]}>
+                        <Form.Item name={"current_ontology"} label={"Ontology"} rules={[{required: false}]}>
                             <Select options={ontologies}
                                     onChange={(value, option: any) => {
                                         getOntologyInUse(value)

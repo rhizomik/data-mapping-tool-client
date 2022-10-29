@@ -28,7 +28,7 @@ class InstanceService {
     createInstances(payload: object) {
         const headers = {
             'Authorization': 'Bearer ' + this.authService.hasCredentials()
-        };
+        };       
 
         return axios.post(this.configService.getConfig().api_url + '/instances/', payload, {headers: headers});
 
