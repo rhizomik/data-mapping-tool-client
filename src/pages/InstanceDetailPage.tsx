@@ -2,6 +2,7 @@ import {useNavigate, useParams} from "react-router-dom";
 import React, {useEffect, useState} from "react";
 import OntologyService from "../services/OntologyService";
 import VirtualList from 'rc-virtual-list';
+
 import {
     Button,
     Card,
@@ -21,8 +22,7 @@ import {
     Tag,
     List,
     Tooltip,
-    Upload,
-    Checkbox
+    Upload    
 } from "antd";
 import InstanceService from "../services/InstanceService";
 import {
@@ -102,6 +102,7 @@ const InstanceDetailPage = () => {
 
     const [isSearchStarted,setIsSearchStarted] = useState<boolean>();
     const [isSearchFinished,setIsSearchFinished] = useState<boolean>();
+   
 
     // loading
     const [loading, setLoading] = useState<any>({instances: false, classes: false});
@@ -312,7 +313,7 @@ const InstanceDetailPage = () => {
     // Mapping
 
     const startMapping = (_class: string) => {
-        console.log(instance);
+     
         navigate('mapping', {
             state: {
                 _id: params.id,
@@ -429,6 +430,7 @@ const InstanceDetailPage = () => {
 
     return (<>
         {/* Classes Modal */}
+     
         <Modal visible={visibleClasses} onCancel={closeClasses} onOk={classesForm.submit} width={"50%"}>
             <Form layout={"vertical"} form={classesForm} onFinish={onFinishClasses}>
                 <Form.Item name={"suggest"} label={"suggestions"} rules={[{required: false}]}>

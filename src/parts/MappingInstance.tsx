@@ -51,17 +51,44 @@ const MappingInstance = (props: any) => {
             setInstance(res.data.data);
             setMapping(res.data.data.mapping[_class].columns);
             setSubject(res.data.data.mapping[_class].subject);
-            setLoading({...loading, instance: false})
-            getOntology(res.data.data.current_ontology)
+            setLoading({...loading, instance: false})  
+            if(res.data.data.current_ontology.length > 0){
+                getOntology(res.data.data.current_ontology);  
+            }else{
+                createOntology(res.data.data);
+            }
         }).catch((err) => {
             message.error(err.toString());
             setLoading({...loading, instance: false})
         })
     }
 
+
+    const createOntology = (instance_response: any) => {       
+        const mappingOntologyInformation: object[] = [];       
+
+        instance_response['classes_to_map'].forEach((_className: string) => {
+            mappingOntologyInformation.push(
+                {
+                    domain: _className,
+                    name: _className,
+                    range: "<class 'str'>",
+                    value: _className
+                }
+            )
+        }
+        );
+
+        console.log(mappingOntologyInformation)
+
+        setProperties(mappingOntologyInformation);
+    }
+
     const getOntology = (id: string) => {
+
         setLoading({...loading, ontology: true})
         ontologyService.getProperties(id, "data", {classes: _class}).then((res) => {
+            console.log(res.data.data)
             setProperties(res.data.data)
             setLoading({...loading, ontology: false})
         }).catch((err) => {
