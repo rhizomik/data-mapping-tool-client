@@ -8,7 +8,7 @@ class SuggestionService {
 
     getSuggestions(keyword: string) {
         const url = "https://lov.linkeddata.es/dataset/lov/api/v2/term/search";
-        return axios.get(url + '?q=' + keyword);
+        return axios.get(url + '?q=' + keyword + '&type=property');
     }
 
 }
