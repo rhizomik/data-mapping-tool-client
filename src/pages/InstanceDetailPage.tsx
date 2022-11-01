@@ -1,5 +1,5 @@
 import {useNavigate, useParams} from "react-router-dom";
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import OntologyService from "../services/OntologyService";
 import VirtualList from 'rc-virtual-list';
 
@@ -76,13 +76,22 @@ const InstanceDetailPage = () => {
     const [dataRepository, setDataRepository] = useState<DataVerseSpace[]>([]);
     
     // Variables
+    // Variables
     const [classes, setClasses] = useState<any>([]);
+    const [suggestedClasses, setSuggestedClasses] = useState<any>([]);
+    const [searchedClasses, setSearchedClasses] = useState<any>([]);
+    const [acceptedSuggestedClasses, setAcceptedSuggestedClasses] = useState<string[]>([]);
+    const [acceptedSearchedClasses, setAcceptedSearchedClasses] = useState<string[]>([]);
+    const [suggestedProperties, setSuggestedProperties] = useState<any>([]);
+    const [isAutossugest, setAutosuggest] = useState<boolean>(false);
     const [instance, setInstance] = useState<any>({});
     const [currentOntology, setCurrentOntology] = useState<any>({});
     const [generateConfig, setGenerateConfig] = useState<any>([]);
     const [generateOptions, setGenerateOptions] = useState<any>([]);
     const [relations, setRelations] = useState<any>([]);
     const [ontologies, setOntologies] = useState<any>([]);
+
+    //References
 
     // Search
     const [classSearch, setClassSearch] = useState<any>([])
@@ -206,6 +215,7 @@ const InstanceDetailPage = () => {
     const showClasses = () => {
         classesForm.setFieldsValue({select: instance.classes_to_map})
         setVisibleClasses(true);
+        autoSuggest();
     }
 
     const onFinishClasses = () => {
@@ -262,6 +272,54 @@ const InstanceDetailPage = () => {
         if (status === 'error') {
             message.error(`${info.file.name} file upload failed.`, 2);
         }
+    }
+
+    const autoSuggest = () => {
+        setAutosuggest(true);  
+        const listOfSuggestions: Array<{}> = [];
+        setSuggestedClasses(listOfSuggestions);
+        setSuggestedClasses(listOfSuggestions);
+        setSuggestedClasses(listOfSuggestions);
+        console.log(suggestedClasses);
+ 
+        for( let i = 0; i < instance.filenames.length; ++i){
+            const pre_processed_filename = instance.filenames[i].split('.')[0];
+            suggest(true, pre_processed_filename);
+        }
+        
+        // suggest(false, "");
+    }
+    
+    const handleSuggestedClasses = (value: string[]) => {
+        setAcceptedSuggestedClasses(value);
+    }
+
+    const handleSearchedClasses = (value: string[]) => {
+        setAcceptedSearchedClasses(value);
+    }
+    
+    const acceptSuggestions = () => {
+        const classesToAdd: any[] = [];
+       
+        suggestedClasses.forEach((element: any) => {
+            if (acceptedSuggestedClasses.includes(element.value)){
+                classesToAdd.push(element);
+            }
+            
+        });
+        setClasses(classes.concat(classesToAdd));  
+    }
+
+    const acceptSearch = () => {
+        const classesToAdd: any[] = [];
+       
+        searchedClasses.forEach((element: any) => {
+            if (acceptedSearchedClasses.includes(element.value)){
+                classesToAdd.push(element);
+            }
+            
+        });
+        setClasses(classes.concat(classesToAdd));  
     }
 
     // Upload Modal
@@ -394,9 +452,24 @@ const InstanceDetailPage = () => {
         setIsSearchStarted(false);
     }
 
+    const searchClasses = (textToSearch : string) => {
 
-    const suggestClasses = (e: any) => {       
-        suggestionService.getSuggestions(e.target.value).then((res) => {
+        suggestionService.getSuggestedClasses(textToSearch).then((res) => {
+            const results = res.data.results;
+            const listOfSuggestions: Array<{}> = [];
+
+            Array.prototype.forEach.call(results, element => {
+                const name = element['prefixedName'][0];
+                listOfSuggestions.push({value:name, label:name})           
+              });            
+            setSearchedClasses(searchedClasses.concat(listOfSuggestions));                 
+        });
+    }
+
+    const suggest = (isClass: boolean, valueToSearch: string) => {       
+        const serviceCaller = isClass ? suggestionService.getSuggestedClasses : suggestionService.getSuggestedProperties;
+
+        serviceCaller(valueToSearch).then((res) => {
             const results = res.data.results;
             const listOfSuggestions: Array<{}> = [];
 
@@ -404,12 +477,13 @@ const InstanceDetailPage = () => {
                 const name = element['prefixedName'][0];
                 listOfSuggestions.push({value:name, label:name})           
               });
-            setClasses(listOfSuggestions);
-
+            if(isClass){
+                setSuggestedClasses(suggestedClasses.concat(listOfSuggestions));
+            }else{
+                setSuggestedProperties(suggestedProperties.concat(listOfSuggestions));
+            }            
         });
     }
-
-
 
     const dataverseSearch = () => {
         const filter = 'csv';  
@@ -430,16 +504,14 @@ const InstanceDetailPage = () => {
 
     return (<>
         {/* Classes Modal */}
-     
+        
+        {!instance.suggest_ontology?
         <Modal visible={visibleClasses} onCancel={closeClasses} onOk={classesForm.submit} width={"50%"}>
             <Form layout={"vertical"} form={classesForm} onFinish={onFinishClasses}>
-                <Form.Item name={"suggest"} label={"suggestions"} rules={[{required: false}]}>
-                        <Input onChange={suggestClasses}/>
-                </Form.Item>   
                 <Form.Item name={"select"} label={"Classes"} rules={[{required: true}]}>
                     <Select mode="multiple"                      
                             placeholder="Select the class/es that you would like to map."
-                            options={classes}/>
+                            options={suggestedClasses}/>
                 </Form.Item>   
             </Form>
             <Divider/>
@@ -454,7 +526,35 @@ const InstanceDetailPage = () => {
             </Space>
 
         </Modal>
-
+        :
+        <Modal visible={visibleClasses} onCancel={closeClasses} onOk={classesForm.submit} width={"50%"}>           
+            <Form layout={"vertical"} form={classesForm} onFinish={onFinishClasses}>     
+                <label>Suggested classes according the name of your files.</label>
+                <Select disabled={!isAutossugest}
+                    mode="multiple" 
+                    allowClear style={{ width: '100%' }} 
+                    placeholder="Classs suggestions" 
+                    onChange={handleSuggestedClasses}
+                    options={suggestedClasses}>               
+                </Select>
+                <Button onClick={acceptSuggestions}>Add suggestions</Button>  
+                <Select
+                    mode="multiple" 
+                    allowClear style={{ width: '100%' }} 
+                    placeholder="Classs suggestions" 
+                    onSearch={searchClasses}
+                    onChange={handleSearchedClasses}
+                    options={searchedClasses}>               
+                </Select>
+                <Button onClick={acceptSearch}>Add selected results</Button>  
+                <Form.Item name={"select"} label={"Classes"} rules={[{required: true}]}>
+                    <Select mode="multiple"                                                  
+                            placeholder="Select the class/es that you would like to map."
+                            options={classes}/>
+                </Form.Item>   
+            </Form>    
+        </Modal>
+        }
         {/* Edit Instance Modal */}
 
         <Modal
