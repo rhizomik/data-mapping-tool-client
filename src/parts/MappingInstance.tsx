@@ -5,6 +5,7 @@ import InstanceService from "../services/InstanceService";
 import FileService from "../services/FileService";
 import OntologyService from "../services/OntologyService";
 import {LockOutlined, QuestionCircleOutlined, TableOutlined, UnlockOutlined} from "@ant-design/icons";
+import MappingSearchSuggestion from "./MappingSearchSuggestion";
 
 const {Column} = Table;
 
@@ -49,17 +50,30 @@ const MappingInstance = (props: any) => {
         setLoading({...loading, instance: true})
         instanceService.getInstance(_id).then((res) => {
             setInstance(res.data.data);
-            setMapping(res.data.data.mapping[_class].columns);
-            setSubject(res.data.data.mapping[_class].subject);
-            setLoading({...loading, instance: false})  
-            if(res.data.data.current_ontology.length > 0){
-                getOntology(res.data.data.current_ontology);  
+            if(!res.data.data.suggest_ontology){
+                setMapping(res.data.data.mapping[_class].columns);
+                setSubject(res.data.data.mapping[_class].subject);
+                getOntology(res.data.data.current_ontology);                  
             }else{
                 createOntology(res.data.data);
             }
+            
+            setLoading({...loading, instance: false})  ;
         }).catch((err) => {
             message.error(err.toString());
             setLoading({...loading, instance: false})
+        })
+    }
+
+    const getOntology = (id: string) => {
+
+        setLoading({...loading, ontology: true})
+        ontologyService.getProperties(id, "data", {classes: _class}).then((res) => {            
+            setProperties(res.data.data)
+            setLoading({...loading, ontology: false})
+        }).catch((err) => {
+            message.error(err.toString())
+            setLoading({...loading, ontology: false})
         })
     }
 
@@ -82,19 +96,6 @@ const MappingInstance = (props: any) => {
         console.log(mappingOntologyInformation)
 
         setProperties(mappingOntologyInformation);
-    }
-
-    const getOntology = (id: string) => {
-
-        setLoading({...loading, ontology: true})
-        ontologyService.getProperties(id, "data", {classes: _class}).then((res) => {
-            console.log(res.data.data)
-            setProperties(res.data.data)
-            setLoading({...loading, ontology: false})
-        }).catch((err) => {
-            message.error(err.toString())
-            setLoading({...loading, ontology: false})
-        })
     }
 
     const back = () => {
@@ -175,6 +176,29 @@ const MappingInstance = (props: any) => {
                 </Col>
             </Row>
             <Divider/>
+            {instance.suggest_ontology?
+            <React.Fragment>
+                <Row>
+                    <Col span={24}>
+                        <h4><b>Define Mapping:</b></h4>
+                        {
+                            <Table bordered={true} pagination={{defaultPageSize: 5}} loading={loading.ontology}
+                                                dataSource={columns}>
+                                <Column title={"Properties"} dataIndex={"dataIndex"}/>
+                                <Column title={"Properties"} dataIndex={"dataIndex"} 
+                                  render={(dataIndex: string) => (
+                                    <MappingSearchSuggestion fieldName={dataIndex} ></MappingSearchSuggestion>
+                                  )}
+                                />
+                            </Table>
+                        }
+                  
+                    </Col>
+                </Row>
+            <Divider/>
+            </React.Fragment>
+            :
+            ''}
             <Row>
                 <Col span={24}>
                     <h4><b>Mapping:</b></h4>

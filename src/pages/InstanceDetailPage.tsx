@@ -1,5 +1,5 @@
 import {useNavigate, useParams} from "react-router-dom";
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useState} from "react";
 import OntologyService from "../services/OntologyService";
 import VirtualList from 'rc-virtual-list';
 
@@ -278,16 +278,11 @@ const InstanceDetailPage = () => {
         setAutosuggest(true);  
         const listOfSuggestions: Array<{}> = [];
         setSuggestedClasses(listOfSuggestions);
-        setSuggestedClasses(listOfSuggestions);
-        setSuggestedClasses(listOfSuggestions);
-        console.log(suggestedClasses);
  
         for( let i = 0; i < instance.filenames.length; ++i){
             const pre_processed_filename = instance.filenames[i].split('.')[0];
             suggest(true, pre_processed_filename);
-        }
-        
-        // suggest(false, "");
+        }  
     }
     
     const handleSuggestedClasses = (value: string[]) => {
