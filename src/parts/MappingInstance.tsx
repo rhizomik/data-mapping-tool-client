@@ -79,8 +79,8 @@ const MappingInstance = (props: any) => {
 
 
     const createOntology = (instance_response: any) => {       
-        const mappingOntologyInformation: object[] = [];       
-
+        const mappingOntologyInformation: object[] = [];   
+    
         instance_response['classes_to_map'].forEach((_className: string) => {
             mappingOntologyInformation.push(
                 {
@@ -91,11 +91,26 @@ const MappingInstance = (props: any) => {
                 }
             )
         }
-        );
-
-        console.log(mappingOntologyInformation)
+        );     
 
         setProperties(mappingOntologyInformation);
+    }
+
+    const assignMappingToNewOntology = (instance_response: any, selected_value: string) =>{
+        const splitted_name = selected_value.split(':');
+        const domain = splitted_name[0];
+        const name = splitted_name[1];
+
+        properties.push(
+            {
+                domain: domain,
+                name: name,
+                range: "<class 'str'>",
+                value: selected_value
+            }
+        );
+    
+        setProperties(properties);
     }
 
     const back = () => {
@@ -114,6 +129,8 @@ const MappingInstance = (props: any) => {
     }
 
     const onChangeTable = (selectedValue: any, ontology_value: any) => {
+        console.log(selectedValue)
+        console.log(ontology_value)
         setMapping({...mapping, [ontology_value.name]: selectedValue});
     }
 
@@ -187,7 +204,12 @@ const MappingInstance = (props: any) => {
                                 <Column title={"Properties"} dataIndex={"dataIndex"}/>
                                 <Column title={"Properties"} dataIndex={"dataIndex"} 
                                   render={(dataIndex: string) => (
-                                    <MappingSearchSuggestion fieldName={dataIndex} ></MappingSearchSuggestion>
+                                    <MappingSearchSuggestion 
+                                        onChange={(selectedValue, option) => {
+                                            assignMappingToNewOntology(instance,selectedValue)
+                                        }}
+                                        fieldName={dataIndex}>                                            
+                                    </MappingSearchSuggestion>
                                   )}
                                 />
                             </Table>
@@ -198,7 +220,7 @@ const MappingInstance = (props: any) => {
             <Divider/>
             </React.Fragment>
             :
-            ''}
+            <React.Fragment>
             <Row>
                 <Col span={24}>
                     <h4><b>Mapping:</b></h4>
@@ -219,6 +241,7 @@ const MappingInstance = (props: any) => {
                     </Table>
                 </Col>
             </Row>
+            </React.Fragment>}
             <Row>
                 <Col>
                     <Button onClick={back}>Back</Button>
