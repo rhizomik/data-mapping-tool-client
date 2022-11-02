@@ -50,15 +50,17 @@ const MappingInstance = (props: any) => {
         setLoading({...loading, instance: true})
         instanceService.getInstance(_id).then((res) => {
             setInstance(res.data.data);
-            if(!res.data.data.suggest_ontology){
+            if(res.data.data.mapping.hasOwnProperty(_class)){
                 setMapping(res.data.data.mapping[_class].columns);
                 setSubject(res.data.data.mapping[_class].subject);
-                getOntology(res.data.data.current_ontology);                  
-            }else{
-                createOntology(res.data.data);
+                if(res.data.data.current_ontology.length > 0){
+                    getOntology(res.data.data.current_ontology); 
+                }                                
+            }else{               
+                defineMapping(res.data.data);
             }
             
-            setLoading({...loading, instance: false})  ;
+            setLoading({...loading, instance: false});
         }).catch((err) => {
             message.error(err.toString());
             setLoading({...loading, instance: false})
@@ -78,22 +80,14 @@ const MappingInstance = (props: any) => {
     }
 
 
-    const createOntology = (instance_response: any) => {       
-        const mappingOntologyInformation: object[] = [];   
-    
-        instance_response['classes_to_map'].forEach((_className: string) => {
-            mappingOntologyInformation.push(
-                {
-                    domain: _className,
-                    name: _className,
-                    range: "<class 'str'>",
-                    value: _className
-                }
-            )
-        }
-        );     
 
-        setProperties(mappingOntologyInformation);
+
+    const defineMapping = (instance_response: any) => {
+        instance_response.mapping[_class]  = {
+            columns: [],
+            fileSelected: current_file,
+            status: false
+        };          
     }
 
     const assignMappingToNewOntology = (instance_response: any, selected_value: string) =>{
@@ -110,7 +104,14 @@ const MappingInstance = (props: any) => {
             }
         );
     
+        instance_response.mapping[_class].columns.push(
+            {
+                [name]: selected_value,
+            }
+        );
+        setMapping(instance_response.mapping[_class].columns)
         setProperties(properties);
+        console.log(instance_response)
     }
 
     const back = () => {
@@ -118,7 +119,8 @@ const MappingInstance = (props: any) => {
     }
 
     const submit = () => {
-        let newInstance = instance;
+        console.log(instance)
+        let newInstance = instance;       
         newInstance.mapping[_class].columns = mapping
         newInstance.mapping[_class].fileSelected = selectedFile
         newInstance.mapping[_class].subject = subject;
@@ -129,8 +131,6 @@ const MappingInstance = (props: any) => {
     }
 
     const onChangeTable = (selectedValue: any, ontology_value: any) => {
-        console.log(selectedValue)
-        console.log(ontology_value)
         setMapping({...mapping, [ontology_value.name]: selectedValue});
     }
 
