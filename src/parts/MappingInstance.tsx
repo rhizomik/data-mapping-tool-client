@@ -82,7 +82,7 @@ const MappingInstance = (props: any) => {
 
     const defineMapping = (instance_response: any) => {
         instance_response.mapping[_class]  = {
-            columns: [],
+            columns: {},
             fileSelected: current_file,
             status: false
         };          
@@ -102,13 +102,7 @@ const MappingInstance = (props: any) => {
             }
         );
         
-        instance_response.mapping[_class].columns.push(
-            {
-                [selected_value]: dataIndex,
-            }
-        );
-
-        console.log(instance_response.mapping[_class].columns)
+        instance_response.mapping[_class].columns[selected_value] = dataIndex; 
         setMapping(instance_response.mapping[_class].columns)
         setProperties(properties);
     }
@@ -121,13 +115,21 @@ const MappingInstance = (props: any) => {
     const getValueForDataIndex = (dataIndex: string) => {
 
         const columnsMapping = instance.mapping[_class].columns;
+        
+    
         let value = undefined;
-        columnsMapping.forEach((element:any) => {
-            const keyMapping = Object.keys(element)[0];
-            if (element[keyMapping] === dataIndex){
-                value = keyMapping
+        
+        if(Object.keys(columnsMapping).length === 0){
+            return value;
+        }
+        const keys = Object.keys(columnsMapping);
+        keys.forEach((element: any) => {
+            console.log(element)
+            if(columnsMapping[element] === dataIndex){
+                value = element
             }
         });
+
         return value;
     }
 
