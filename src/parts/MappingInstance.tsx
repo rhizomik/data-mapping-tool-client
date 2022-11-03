@@ -49,10 +49,10 @@ const MappingInstance = (props: any) => {
     const getInstance = () => {
         setLoading({...loading, instance: true})
         instanceService.getInstance(_id).then((res) => {
-            setInstance(res.data.data);
+            setInstance(res.data.data);            
             if(res.data.data.mapping.hasOwnProperty(_class)){
                 setMapping(res.data.data.mapping[_class].columns);
-                setSubject(res.data.data.mapping[_class].subject);
+                setSubject(res.data.data.mapping[_class].subject);                      
                 if(res.data.data.current_ontology.length > 0){
                     getOntology(res.data.data.current_ontology); 
                 }                                
@@ -68,6 +68,7 @@ const MappingInstance = (props: any) => {
     }
 
     const getOntology = (id: string) => {
+        
 
         setLoading({...loading, ontology: true})
         ontologyService.getProperties(id, "data", {classes: _class}).then((res) => {            
@@ -79,9 +80,6 @@ const MappingInstance = (props: any) => {
         })
     }
 
-
-
-
     const defineMapping = (instance_response: any) => {
         instance_response.mapping[_class]  = {
             columns: [],
@@ -90,7 +88,7 @@ const MappingInstance = (props: any) => {
         };          
     }
 
-    const assignMappingToNewOntology = (instance_response: any, selected_value: string) =>{
+    const assignMappingToNewOntology = (instance_response: any, selected_value: string, dataIndex: string) =>{
         const splitted_name = selected_value.split(':');
         const domain = splitted_name[0];
         const name = splitted_name[1];
@@ -103,23 +101,37 @@ const MappingInstance = (props: any) => {
                 value: selected_value
             }
         );
-    
+        
         instance_response.mapping[_class].columns.push(
             {
-                [name]: selected_value,
+                [selected_value]: dataIndex,
             }
         );
+
+        console.log(instance_response.mapping[_class].columns)
         setMapping(instance_response.mapping[_class].columns)
         setProperties(properties);
-        console.log(instance_response)
     }
+
 
     const back = () => {
         navigate(-1)
     }
 
+    const getValueForDataIndex = (dataIndex: string) => {
+
+        const columnsMapping = instance.mapping[_class].columns;
+        let value = undefined;
+        columnsMapping.forEach((element:any) => {
+            const keyMapping = Object.keys(element)[0];
+            if (element[keyMapping] === dataIndex){
+                value = keyMapping
+            }
+        });
+        return value;
+    }
+
     const submit = () => {
-        console.log(instance)
         let newInstance = instance;       
         newInstance.mapping[_class].columns = mapping
         newInstance.mapping[_class].fileSelected = selectedFile
@@ -203,10 +215,11 @@ const MappingInstance = (props: any) => {
                                                 dataSource={columns}>
                                 <Column title={"Properties"} dataIndex={"dataIndex"}/>
                                 <Column title={"Properties"} dataIndex={"dataIndex"} 
-                                  render={(dataIndex: string) => (
+                                  render={(dataIndex: string) => (                                    
                                     <MappingSearchSuggestion 
+                                        defaultValue={getValueForDataIndex(dataIndex)}
                                         onChange={(selectedValue, option) => {
-                                            assignMappingToNewOntology(instance,selectedValue)
+                                            assignMappingToNewOntology(instance,selectedValue, dataIndex)
                                         }}
                                         fieldName={dataIndex}>                                            
                                     </MappingSearchSuggestion>

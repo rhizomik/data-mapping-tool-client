@@ -4,6 +4,7 @@ import SuggestionService from "../services/SuggestionService";
 
 interface IMappingSearchSuggestionProps {
     fieldName: string;
+    defaultValue?: string;
     onChange?: ((value: any, option: never[]) => void);
 }
 
@@ -54,6 +55,8 @@ export default class MappingSearchSuggestion extends React.Component<IMappingSea
                     options={this.state.suggestions}
                     onSearch={this.searchProperties}
                     onChange={this.props.onChange}
+                    defaultValue={this.props.defaultValue}
+                    defaultActiveFirstOption
                     >               
                 </Select>
     }
