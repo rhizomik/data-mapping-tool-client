@@ -480,6 +480,10 @@ const InstanceDetailPage = () => {
         });
     }
 
+    const createRemoteOntologies = () =>{
+        ontologyService.create_ontology_from_remote_source("foaf");
+    }
+
     const dataverseSearch = () => {
         const filter = 'csv';  
         setIsSearchStarted(true);    
@@ -546,7 +550,8 @@ const InstanceDetailPage = () => {
                     <Select mode="multiple"                                                  
                             placeholder="Select the class/es that you would like to map."
                             options={classes}/>
-                </Form.Item>   
+                </Form.Item> 
+                <Button onClick={createRemoteOntologies}>Create ontologies from remote sources</Button>    
             </Form>    
         </Modal>
         }

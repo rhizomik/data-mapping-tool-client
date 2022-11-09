@@ -82,6 +82,14 @@ class OntologyService {
 
         return axios.get(this.configService.getConfig().api_url + '/ontology/' + id + '/download', {headers: headers})
     }
+
+    create_ontology_from_remote_source(vocab: string){
+        const headers = {
+            'Authorization': 'Bearer ' + this.authService.hasCredentials()
+        };
+
+        return axios.get(this.configService.getConfig().api_url + '/ontology/create/remote/' + vocab, {headers: headers})
+    }
 }
 
 export default OntologyService;
