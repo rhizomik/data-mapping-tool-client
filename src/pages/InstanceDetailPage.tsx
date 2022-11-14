@@ -156,7 +156,7 @@ const InstanceDetailPage = () => {
     const getOntologyInUse = (ontologyId: string) => {
         ontologyService.getOntologies().then(res => {
             setOntologies(res.data.data.map((i: any) => {
-                if (i._id === ontologyId) {
+                if (i._id === ontologyId) {                
                     setCurrentOntology({value: i._id, label: i.ontology_name})
                 }
                 return {value: i._id, label: i.ontology_name}
@@ -481,7 +481,19 @@ const InstanceDetailPage = () => {
     }
 
     const createRemoteOntologies = () =>{
-        ontologyService.create_ontology_from_remote_source("foaf");
+        ontologyService.create_ontology_from_remote_source("dbpedia-owl").then(
+            (response: any) => {       
+                const idOntology = response.data.id;               
+                getOntologyInUse(idOntology);
+                getClasses(idOntology);                
+                setInstance({...instance, 'current_ontology': idOntology});          
+                instanceService.editInstances(instance._id, {
+                    current_ontology: idOntology,
+                }).catch((err) => {
+                    message.error(err.toString())
+                })
+            }
+        )
     }
 
     const dataverseSearch = () => {
