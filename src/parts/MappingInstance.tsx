@@ -207,7 +207,7 @@ const MappingInstance = (props: any) => {
                 </Col>
             </Row>
             <Divider/>
-            {instance.suggest_ontology?
+            {true?
             <React.Fragment>
                 <Row>
                     <Col span={24}>
