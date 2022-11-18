@@ -76,12 +76,14 @@ const InstanceDetailPage = () => {
     const [dataRepository, setDataRepository] = useState<DataVerseSpace[]>([]);
     
     // Variables
-    // Variables
     const [classes, setClasses] = useState<any>([]);
     const [suggestedClasses, setSuggestedClasses] = useState<any>([]);
+    const [isSuggestionAccepted, setIsSuggestionAccepted] = useState<boolean>(false);
+    const [isOntologyReady, setIsOntologyReady] = useState<boolean>(false);
+    const [acceptedSearch, setAcceptedSearch] = useState<string>("");
     const [searchedClasses, setSearchedClasses] = useState<any>([]);
-    const [acceptedSuggestedClasses, setAcceptedSuggestedClasses] = useState<string[]>([]);
-    const [acceptedSearchedClasses, setAcceptedSearchedClasses] = useState<string[]>([]);
+    const [acceptedSuggestedClasses, setAcceptedSuggestedClasses] = useState<string>("");
+    const [acceptedSearchedClasses, setAcceptedSearchedClasses] = useState<string>("");
     const [suggestedProperties, setSuggestedProperties] = useState<any>([]);
     const [isAutossugest, setAutosuggest] = useState<boolean>(false);
     const [instance, setInstance] = useState<any>({});
@@ -196,6 +198,7 @@ const InstanceDetailPage = () => {
 
     const getRelations = (instance: any) => {
         ontologyService.getRelationsBetweenClasses(instance.current_ontology, {classes: instance.classes_to_map}).then((res) => {
+            console.log(res);
             let rel = Object.keys(res.data.relations).map((rel: string) => {
                 return instance.relations[rel]
             })
@@ -229,10 +232,10 @@ const InstanceDetailPage = () => {
 
         let newInstance = {...instance, classes_to_map: values}
 
-        setInstance(newInstance)
-        if(!newInstance['suggest_ontology']){
-            getRelations(newInstance)
-        }
+        setInstance(newInstance);
+        
+        getRelations(newInstance);
+        
         setClassSearch(values)
         closeClasses();
 
@@ -285,11 +288,11 @@ const InstanceDetailPage = () => {
         }  
     }
     
-    const handleSuggestedClasses = (value: string[]) => {
+    const handleSuggestedClasses = (value: string) => {
         setAcceptedSuggestedClasses(value);
     }
 
-    const handleSearchedClasses = (value: string[]) => {
+    const handleSearchedClasses = (value: string) => {
         setAcceptedSearchedClasses(value);
     }
     
@@ -303,6 +306,8 @@ const InstanceDetailPage = () => {
             
         });
         setClasses(classes.concat(classesToAdd));  
+        setAcceptedSearch(acceptedSuggestedClasses);
+        setIsSuggestionAccepted(true);
     }
 
     const acceptSearch = () => {
@@ -314,7 +319,9 @@ const InstanceDetailPage = () => {
             }
             
         });
-        setClasses(classes.concat(classesToAdd));  
+        setClasses(classes.concat(classesToAdd));         
+        setAcceptedSearch(acceptedSearchedClasses);
+        setIsSuggestionAccepted(true);
     }
 
     // Upload Modal
@@ -455,7 +462,10 @@ const InstanceDetailPage = () => {
 
             Array.prototype.forEach.call(results, element => {
                 const name = element['prefixedName'][0];
-                listOfSuggestions.push({value:name, label:name})           
+                const ontoName = name.split(':')[0];
+                const className = name.split(':')[1];
+                const labelText = className + " (Ontology: "+ ontoName +")";
+                listOfSuggestions.push({value:ontoName, label:labelText})           
               });            
             setSearchedClasses(searchedClasses.concat(listOfSuggestions));                 
         });
@@ -470,7 +480,8 @@ const InstanceDetailPage = () => {
 
             Array.prototype.forEach.call(results, element => {
                 const name = element['prefixedName'][0];
-                listOfSuggestions.push({value:name, label:name})           
+                const ontoName = name.split(':')[0];         
+                listOfSuggestions.push({value:ontoName, label:ontoName})           
               });
             if(isClass){
                 setSuggestedClasses(suggestedClasses.concat(listOfSuggestions));
@@ -480,18 +491,36 @@ const InstanceDetailPage = () => {
         });
     }
 
+    const refreshInstance = (idOntology: string) => {        
+        instanceService.initInstance(instance._id, {
+            ontology_id: idOntology,
+            suggest_ontology: false
+        }).then(
+            () => {
+                getInstanceInfo();
+            }
+        )
+    }
+
     const createRemoteOntologies = () =>{
         ontologyService.create_ontology_from_remote_source("dbpedia-owl").then(
             (response: any) => {       
-                const idOntology = response.data.id;               
-                getOntologyInUse(idOntology);
-                getClasses(idOntology);                
-                setInstance({...instance, 'current_ontology': idOntology});          
+                const idOntology = response.data.id;  
                 instanceService.editInstances(instance._id, {
                     current_ontology: idOntology,
-                }).catch((err) => {
+                    suggest_ontology: false
+                }).then(
+                    (response) => {
+                        console.log(response);
+                        setInstance(response.data.instance); 
+                        refreshInstance(idOntology);
+                    }
+                )
+                .catch((err) => {
                     message.error(err.toString())
-                })
+                });      
+                
+                setIsOntologyReady(true);                
             }
         )
     }
@@ -540,31 +569,49 @@ const InstanceDetailPage = () => {
         :
         <Modal visible={visibleClasses} onCancel={closeClasses} onOk={classesForm.submit} width={"50%"}>           
             <Form layout={"vertical"} form={classesForm} onFinish={onFinishClasses}>     
-                <label>Suggested classes according the name of your files.</label>
-                <Select disabled={!isAutossugest}
-                    mode="multiple" 
+                <label>Suggested Ontologies according the name of your files.</label>
+                <Select disabled={!isAutossugest || isSuggestionAccepted}   
                     allowClear style={{ width: '100%' }} 
+                    defaultActiveFirstOption={true}
                     placeholder="Classs suggestions" 
                     onChange={handleSuggestedClasses}
                     options={suggestedClasses}>               
                 </Select>
-                <Button onClick={acceptSuggestions}>Add suggestions</Button>  
+                <Button onClick={acceptSuggestions} disabled={isSuggestionAccepted}>Accept suggestion</Button> 
+                <br/>
+                <label>Or search classes to extract an ontology</label> 
                 <Select
-                    mode="multiple" 
+                    disabled={isSuggestionAccepted}               
                     allowClear style={{ width: '100%' }} 
+                    showSearch
                     placeholder="Classs suggestions" 
                     onSearch={searchClasses}
                     onChange={handleSearchedClasses}
                     options={searchedClasses}>               
                 </Select>
-                <Button onClick={acceptSearch}>Add selected results</Button>  
+                <Button onClick={acceptSearch} disabled={isSuggestionAccepted}>Accept selection</Button>  
+                <br/>
+                <label>Accepted class: {acceptedSearch}</label> 
+                <br/>
+                <Button onClick={(e) => {createRemoteOntologies();}} disabled={!isSuggestionAccepted || isOntologyReady}>Create ontologies from remote sources</Button>                  
+                <br/>
                 <Form.Item name={"select"} label={"Classes"} rules={[{required: true}]}>
-                    <Select mode="multiple"                                                  
+                    <Select disabled={!isOntologyReady}
+                            mode="multiple"                                                  
                             placeholder="Select the class/es that you would like to map."
                             options={classes}/>
-                </Form.Item> 
-                <Button onClick={createRemoteOntologies}>Create ontologies from remote sources</Button>    
+                </Form.Item>                   
             </Form>    
+            <Divider/>
+            <Space size={"middle"}>
+                <Tooltip title={"Add All"} placement={"bottom"}><Button disabled={!isOntologyReady} onClick={addAll} shape={"circle"}
+                                                                        icon={<PlusOutlined/>}/></Tooltip>
+                <Tooltip title={"Clean All"} placement={"bottom"}><Button disabled={!isOntologyReady} onClick={cleanAll} shape={"circle"}
+                                                                          icon={<ClearOutlined/>}/>
+                </Tooltip>
+                <Tooltip title={"Undo All"} placement={"bottom"}><Button disabled={!isOntologyReady} onClick={undo} shape={"circle"}
+                                                                         icon={<RollbackOutlined/>}/></Tooltip>
+            </Space>
         </Modal>
         }
         {/* Edit Instance Modal */}
@@ -595,7 +642,6 @@ const InstanceDetailPage = () => {
                                         instanceService.initInstance(params.id, {ontology_id: value}).then(() => {
                                             setClassSearch([]);
                                             getClasses(value);
-
                                             setRelationSearch([]);
                                             getRelations({...instance, current_ontology: value});
                                         }).catch(err => message.error(err.toString()));
