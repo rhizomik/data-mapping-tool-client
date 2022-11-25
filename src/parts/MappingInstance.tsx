@@ -35,11 +35,14 @@ const MappingInstance = (props: any) => {
     const getSample = (filename: string) => {
         setLoading({...instance, sample: true})
         fileService.sample(filename).then((res) => {
-            setSample(res.data.sample)
+            setSample(res.data.sample);
             setColumns(res.data.columns.map((i: any) => {
                 return {value: i, label: i, dataIndex: i, key: i, title: i}
-            }))
-            setLoading({...loading, sample: false})
+            }));
+            setLoading({...loading, sample: false});
+            fileService.inferences(filename).then((resFilename) => {
+                console.log(resFilename);
+            } )
         }).catch((err) => {
             message.error(err.toString())
             setLoading({...loading, sample: false})

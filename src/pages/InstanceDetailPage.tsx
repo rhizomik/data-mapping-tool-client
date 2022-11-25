@@ -360,10 +360,13 @@ const InstanceDetailPage = () => {
         }
     }
 
-    const downloadFiles = () => {
+    const downloadFiles = () => {    
         instance.filenames.map((i: string) => {
             fileService.download(i).then((res) => {
                 fileDownload(res.data, i)
+                fileService.inferences(i).then((inferenceRes) => {
+                    console.log(inferenceRes);
+                })
             }).catch((err) => {
                 message.error(err.toString())
             })

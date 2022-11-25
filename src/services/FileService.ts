@@ -35,6 +35,14 @@ class FileService {
         return axios.get(this.configService.getConfig().api_url + '/files/' + filename, {headers: headers});
     }
 
+    inferences(filename: string){
+        const headers = {
+            'Authorization': 'Bearer ' + this.authService.hasCredentials()
+        };
+
+        return axios.get(this.configService.getConfig().api_url + '/files/inferences/' + filename, {headers: headers});
+    }
+
 }
 
 export default FileService;
