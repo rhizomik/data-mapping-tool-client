@@ -5,6 +5,7 @@ import SuggestionService from "../services/SuggestionService";
 interface IMappingSearchSuggestionProps {
     fieldName: string;
     defaultValue?: string;
+    isMeasure?: boolean;
     onChange?: ((value: any, option: never[]) => void);
 }
 
@@ -23,6 +24,7 @@ export default class MappingSearchSuggestion extends React.Component<IMappingSea
             suggestions: [],
             selections: []
         };
+        this.searchProperties = this.searchProperties.bind(this);
     }
     
     componentDidMount(){
@@ -31,8 +33,12 @@ export default class MappingSearchSuggestion extends React.Component<IMappingSea
 
 
     searchProperties = (textToSearch : string) => {
+        let suggestionCaller = this.suggestionService.getSuggestedProperties;
+        if(this.props.isMeasure){
+            suggestionCaller = this.suggestionService.getMeasureSuggestions;
+        }
 
-        this.suggestionService.getSuggestedProperties(textToSearch).then((res) => {
+        suggestionCaller(textToSearch).then((res) => {
             const results = res.data.results;
             const listOfSuggestions: Array<{}> = [];
 

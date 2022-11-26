@@ -9,6 +9,27 @@ import MappingSearchSuggestion from "./MappingSearchSuggestion";
 
 const {Column} = Table;
 
+
+interface InferenceData{
+    format: string,
+    name: string,
+    type: string
+}
+
+const dataTypeOptions = [
+    {
+        value: 'string',
+        label: 'String'   
+    },{
+        value: 'integer',
+        label: 'Integer'   
+    },{
+        value: 'geopoint',
+        label: 'Geopoint'   
+    }
+
+]
+
 const MappingInstance = (props: any) => {
 
     const {state} = useLocation();
@@ -26,6 +47,7 @@ const MappingInstance = (props: any) => {
     const [instance, setInstance] = useState<any>({})
     const [properties, setProperties] = useState<any>([])
     const [mapping, setMapping] = useState<any>({})
+    const [inferences, setInferences] = useState<{[id: string]: InferenceData} | undefined>(undefined)
 
     const [lock, setLock] = useState(true);
     const [sampleVisible, setSampleVisible] = useState(false);
@@ -41,7 +63,11 @@ const MappingInstance = (props: any) => {
             }));
             setLoading({...loading, sample: false});
             fileService.inferences(filename).then((resFilename) => {
-                console.log(resFilename);
+                const inferenceDict: {[id: string]: InferenceData} = {};
+                resFilename.data.forEach((inference: any) => {
+                    inferenceDict[inference.name] = inference
+                });
+                setInferences(inferenceDict);
             } )
         }).catch((err) => {
             message.error(err.toString())
@@ -126,8 +152,7 @@ const MappingInstance = (props: any) => {
             return value;
         }
         const keys = Object.keys(columnsMapping);
-        keys.forEach((element: any) => {
-            console.log(element)
+        keys.forEach((element: any) => {           
             if(columnsMapping[element] === dataIndex){
                 value = element
             }
@@ -171,6 +196,45 @@ const MappingInstance = (props: any) => {
 
     const closeSampleModal = () => {
         setSampleVisible(false);
+    }
+
+    const processDataTypeComboBox = (dataType: string) => {
+        if(inferences){
+            const type = inferences[dataType].type;
+            return <Select
+                    defaultValue={type}
+                    options={dataTypeOptions}
+                >
+            </Select>
+
+        }
+    }
+
+    const assignAnnotation = (value: string, dataIndex: string) => {
+
+    }
+
+    const processAnnotation = (dataType: string) => {
+        if(inferences){
+            const type = inferences[dataType].type;
+            if(type === 'integer'){
+                return <MappingSearchSuggestion                             
+                            isMeasure={true}
+                            onChange={(selectedValue, option) => {
+                                assignAnnotation(selectedValue, dataType)
+                            }}
+                            fieldName={type}>                                            
+                    </MappingSearchSuggestion>
+            }else{
+                return <MappingSearchSuggestion 
+                            defaultValue={type}
+                            onChange={(selectedValue, option) => {
+                                assignAnnotation(selectedValue, dataType)
+                            }}
+                            fieldName={type}>                                            
+                    </MappingSearchSuggestion>
+            }
+        }
     }
 
     return (
@@ -218,7 +282,7 @@ const MappingInstance = (props: any) => {
                         {
                             <Table bordered={true} pagination={{defaultPageSize: 5}} loading={loading.ontology}
                                                 dataSource={columns}>
-                                <Column title={"Properties"} dataIndex={"dataIndex"}/>
+                                <Column title={"Columns"} dataIndex={"dataIndex"}/>
                                 <Column title={"Properties"} dataIndex={"dataIndex"} 
                                   render={(dataIndex: string) => (                                    
                                     <MappingSearchSuggestion 
@@ -230,6 +294,17 @@ const MappingInstance = (props: any) => {
                                     </MappingSearchSuggestion>
                                   )}
                                 />
+                                <Column title={"Type"} dataIndex={"dataIndex"} 
+                                  render={(dataIndex: string) => (                                    
+                                    processDataTypeComboBox(dataIndex)
+                                  )}
+                                />
+                                <Column title={"Annotation"} dataIndex={"dataIndex"} 
+                                  render={(dataIndex: string) => (                                    
+                                    processAnnotation(dataIndex)
+                                  )}
+                                />
+
                             </Table>
                         }
                   
