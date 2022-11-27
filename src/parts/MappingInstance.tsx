@@ -230,14 +230,33 @@ const MappingInstance = (props: any) => {
     }
 
     const assignAnnotation = (value: string, dataIndex: string) => {
-
+        if(inferences){
+            const localInferences = inferences;
+            localInferences[dataIndex].annotation = value;
+            setInferences(localInferences);
+        }
     }
 
+    const getDefaultValueForAnnotation = (dataIndex: string) => {
+        if(inferences){
+            const type = inferences[dataIndex].type;
+            const retrievedValue = inferences[dataIndex].annotation;
+            if (retrievedValue){
+                return retrievedValue;
+            }else{
+                return type;
+            }
+        }
+        return undefined;
+    }
+
+    
     const processAnnotation = (dataType: string) => {
         if(inferences){
             const type = inferences[dataType].type;
             if(type === 'integer'){
-                return <MappingSearchSuggestion                             
+                return <MappingSearchSuggestion  
+                            defaultValue={inferences[dataType].annotation}                           
                             isMeasure={true}
                             onChange={(selectedValue, option) => {
                                 assignAnnotation(selectedValue, dataType)
@@ -246,7 +265,7 @@ const MappingInstance = (props: any) => {
                     </MappingSearchSuggestion>
             }else{
                 return <MappingSearchSuggestion 
-                            defaultValue={type}
+                            defaultValue={getDefaultValueForAnnotation(dataType)}
                             onChange={(selectedValue, option) => {
                                 assignAnnotation(selectedValue, dataType)
                             }}
