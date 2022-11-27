@@ -35,12 +35,20 @@ class FileService {
         return axios.get(this.configService.getConfig().api_url + '/files/' + filename, {headers: headers});
     }
 
-    inferences(filename: string){
+    getInferences(filename: string){
         const headers = {
             'Authorization': 'Bearer ' + this.authService.hasCredentials()
         };
 
         return axios.get(this.configService.getConfig().api_url + '/files/inferences/' + filename, {headers: headers});
+    }
+
+    updateInferences(filename: string, inferences: any){
+        const headers = {
+            'Authorization': 'Bearer ' + this.authService.hasCredentials()
+        };
+
+        return axios.post(this.configService.getConfig().api_url + '/files/inferences/' + filename, {'inferences': inferences}, {headers: headers});
     }
 
 }

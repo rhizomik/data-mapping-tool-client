@@ -13,7 +13,8 @@ const {Column} = Table;
 interface InferenceData{
     format: string,
     name: string,
-    type: string
+    type: string,
+    annotation?: string
 }
 
 const dataTypeOptions = [
@@ -62,7 +63,7 @@ const MappingInstance = (props: any) => {
                 return {value: i, label: i, dataIndex: i, key: i, title: i}
             }));
             setLoading({...loading, sample: false});
-            fileService.inferences(filename).then((resFilename) => {
+            fileService.getInferences(filename).then((resFilename) => {
                 const inferenceDict: {[id: string]: InferenceData} = {};
                 resFilename.data.forEach((inference: any) => {
                     inferenceDict[inference.name] = inference
@@ -163,12 +164,18 @@ const MappingInstance = (props: any) => {
 
     const submit = () => {
         let newInstance = instance;       
-        newInstance.mapping[_class].columns = mapping
-        newInstance.mapping[_class].fileSelected = selectedFile
+        newInstance.mapping[_class].columns = mapping;
+        newInstance.mapping[_class].fileSelected = selectedFile;
         newInstance.mapping[_class].subject = subject;
         instanceService.editInstances(_id, {mapping: newInstance.mapping}).catch((err) => {
             message.error(err.toString())
         })
+        const listOfInferences = [];
+        for (let key in inferences) {
+            const value = inferences[key];
+            listOfInferences.push(value);            
+        }
+        fileService.updateInferences(selectedFile, listOfInferences);
         navigate(-1);
     }
 
@@ -204,9 +211,21 @@ const MappingInstance = (props: any) => {
             return <Select
                     defaultValue={type}
                     options={dataTypeOptions}
+                    onChange={(selectedValue, option) => {
+                            updateInferences(dataType, selectedValue)
+                        }                        
+                    }
                 >
             </Select>
 
+        }
+    }
+
+    const updateInferences = (dataIndex: string, newValue: any) => {
+        if(inferences){
+            const localInferences = inferences;
+            localInferences[dataIndex].type = newValue;
+            setInferences(localInferences);
         }
     }
 

@@ -364,7 +364,7 @@ const InstanceDetailPage = () => {
         instance.filenames.map((i: string) => {
             fileService.download(i).then((res) => {
                 fileDownload(res.data, i)
-                fileService.inferences(i).then((inferenceRes) => {
+                fileService.getInferences(i).then((inferenceRes) => {
                     console.log(inferenceRes);
                 })
             }).catch((err) => {
