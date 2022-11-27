@@ -5,7 +5,7 @@ import InstanceService from "../services/InstanceService";
 import FileService from "../services/FileService";
 import OntologyService from "../services/OntologyService";
 import {LockOutlined, QuestionCircleOutlined, TableOutlined, UnlockOutlined} from "@ant-design/icons";
-import MappingSearchSuggestion from "./MappingSearchSuggestion";
+
 
 const {Column} = Table;
 
@@ -16,20 +16,6 @@ interface InferenceData{
     type: string,
     annotation?: string
 }
-
-const dataTypeOptions = [
-    {
-        value: 'string',
-        label: 'String'   
-    },{
-        value: 'integer',
-        label: 'Integer'   
-    },{
-        value: 'geopoint',
-        label: 'Geopoint'   
-    }
-
-]
 
 const MappingInstance = (props: any) => {
 
@@ -118,49 +104,11 @@ const MappingInstance = (props: any) => {
         };          
     }
 
-    const assignMappingToNewOntology = (instance_response: any, selected_value: string, dataIndex: string) =>{
-        const splitted_name = selected_value.split(':');
-        const domain = splitted_name[0];
-        const name = splitted_name[1];
-
-        properties.push(
-            {
-                domain: domain,
-                name: name,
-                range: "<class 'str'>",
-                value: selected_value
-            }
-        );
-        
-        instance_response.mapping[_class].columns[selected_value] = dataIndex; 
-        setMapping(instance_response.mapping[_class].columns)
-        setProperties(properties);
-    }
-
 
     const back = () => {
         navigate(-1)
     }
 
-    const getValueForDataIndex = (dataIndex: string) => {
-
-        const columnsMapping = instance.mapping[_class].columns;
-        
-    
-        let value = undefined;
-        
-        if(Object.keys(columnsMapping).length === 0){
-            return value;
-        }
-        const keys = Object.keys(columnsMapping);
-        keys.forEach((element: any) => {           
-            if(columnsMapping[element] === dataIndex){
-                value = element
-            }
-        });
-
-        return value;
-    }
 
     const submit = () => {
         let newInstance = instance;       
@@ -205,75 +153,6 @@ const MappingInstance = (props: any) => {
         setSampleVisible(false);
     }
 
-    const processDataTypeComboBox = (dataType: string) => {
-        if(inferences){
-            const type = inferences[dataType].type;
-            return <Select
-                    defaultValue={type}
-                    options={dataTypeOptions}
-                    onChange={(selectedValue, option) => {
-                            updateInferences(dataType, selectedValue)
-                        }                        
-                    }
-                >
-            </Select>
-
-        }
-    }
-
-    const updateInferences = (dataIndex: string, newValue: any) => {
-        if(inferences){
-            const localInferences = inferences;
-            localInferences[dataIndex].type = newValue;
-            setInferences(localInferences);
-        }
-    }
-
-    const assignAnnotation = (value: string, dataIndex: string) => {
-        if(inferences){
-            const localInferences = inferences;
-            localInferences[dataIndex].annotation = value;
-            setInferences(localInferences);
-        }
-    }
-
-    const getDefaultValueForAnnotation = (dataIndex: string) => {
-        if(inferences){
-            const type = inferences[dataIndex].type;
-            const retrievedValue = inferences[dataIndex].annotation;
-            if (retrievedValue){
-                return retrievedValue;
-            }else{
-                return type;
-            }
-        }
-        return undefined;
-    }
-
-    
-    const processAnnotation = (dataType: string) => {
-        if(inferences){
-            const type = inferences[dataType].type;
-            if(type === 'integer'){
-                return <MappingSearchSuggestion  
-                            defaultValue={inferences[dataType].annotation}                           
-                            isMeasure={true}
-                            onChange={(selectedValue, option) => {
-                                assignAnnotation(selectedValue, dataType)
-                            }}
-                            fieldName={type}>                                            
-                    </MappingSearchSuggestion>
-            }else{
-                return <MappingSearchSuggestion 
-                            defaultValue={getDefaultValueForAnnotation(dataType)}
-                            onChange={(selectedValue, option) => {
-                                assignAnnotation(selectedValue, dataType)
-                            }}
-                            fieldName={type}>                                            
-                    </MappingSearchSuggestion>
-            }
-        }
-    }
 
     return (
         <>
@@ -311,46 +190,7 @@ const MappingInstance = (props: any) => {
 
                 </Col>
             </Row>
-            <Divider/>
-            {true?
-            <React.Fragment>
-                <Row>
-                    <Col span={24}>
-                        <h4><b>Define Mapping:</b></h4>
-                        {
-                            <Table bordered={true} pagination={{defaultPageSize: 5}} loading={loading.ontology}
-                                                dataSource={columns}>
-                                <Column title={"Columns"} dataIndex={"dataIndex"}/>
-                                <Column title={"Properties"} dataIndex={"dataIndex"} 
-                                  render={(dataIndex: string) => (                                    
-                                    <MappingSearchSuggestion 
-                                        defaultValue={getValueForDataIndex(dataIndex)}
-                                        onChange={(selectedValue, option) => {
-                                            assignMappingToNewOntology(instance,selectedValue, dataIndex)
-                                        }}
-                                        fieldName={dataIndex}>                                            
-                                    </MappingSearchSuggestion>
-                                  )}
-                                />
-                                <Column title={"Type"} dataIndex={"dataIndex"} 
-                                  render={(dataIndex: string) => (                                    
-                                    processDataTypeComboBox(dataIndex)
-                                  )}
-                                />
-                                <Column title={"Annotation"} dataIndex={"dataIndex"} 
-                                  render={(dataIndex: string) => (                                    
-                                    processAnnotation(dataIndex)
-                                  )}
-                                />
-
-                            </Table>
-                        }
-                  
-                    </Col>
-                </Row>
-            <Divider/>
-            </React.Fragment>
-            :
+            <Divider/>            
             <React.Fragment>
             <Row>
                 <Col span={24}>
@@ -372,7 +212,7 @@ const MappingInstance = (props: any) => {
                     </Table>
                 </Col>
             </Row>
-            </React.Fragment>}
+            </React.Fragment>
             <Row>
                 <Col>
                     <Button onClick={back}>Back</Button>
