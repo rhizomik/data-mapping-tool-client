@@ -34,7 +34,7 @@ const dataTypeOptions = [
 const MappingInstance = (props: any) => {
 
     const {state} = useLocation();
-    const navigate = useNavigate()
+    const navigate = useNavigate();
     const {_id, _class, files, current_file}: any = state;
 
     const instanceService = new InstanceService();

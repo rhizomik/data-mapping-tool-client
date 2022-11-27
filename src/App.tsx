@@ -20,6 +20,7 @@ import PreviewOntology from "./parts/PreviewOntology";
 import ListOntologies from "./pages/ListOntologies";
 import ConfigService from "./services/ConfigService";
 import CleaningPage from "./pages/CleaningPage";
+import CSVMappingColummns from './parts/CsvMappginColumns';
 
 // Components
 const {Header, Content, Footer} = Layout;
@@ -89,6 +90,7 @@ function App() {
                                 <Route path={"instances/"} element={<ListInstances/>}/>
                                 <Route path={"instances/:id"} element={<InstanceDetailPage/>}/>
                                 <Route path={"instances/:id/mapping"} element={<MappingInstance/>}/>
+                                <Route path={"instances/:id/csv"} element={<CSVMappingColummns/>}/>
                                 <Route path={"instances/:id/link"} element={<MappingRelationsInstance/>}/>
                                 <Route path={"instances/:id/preview"} element={<PreviewResults/>}/>
                             </Route>

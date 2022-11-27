@@ -399,6 +399,14 @@ const InstanceDetailPage = () => {
         })
     }
 
+    const navigateToMapping = () => {
+        navigate('csv', {
+            state: {
+                current_file: instance['filenames'][0]
+            }
+        })
+    }
+
     const selectRelation = (record: any) => {
         let newInstance = instance;
         newInstance.relations[record.relation].selected = !record['selected']
@@ -760,9 +768,12 @@ const InstanceDetailPage = () => {
         </Modal>
 
         {/* Content */}
+        <Row justify="center" style={{marginBottom: "3vh"}}>
+            <Button onClick={navigateToMapping}>Annotate csv file</Button>
+        </Row>  
         <Row>
             <Col span={1}/>
-            <Col span={10}>
+            <Col span={10}>                
                 <h3><b>Classes</b></h3>
                 <Table bordered rowKey={(record) => {
                     return record
@@ -837,18 +848,22 @@ const InstanceDetailPage = () => {
                             })
                             }/>
                     <Column title={"Actions"} align={"center"} render={((value, record) => {
-                        return <Space><Tooltip title={"Link"} placement={"bottom"}><Button size={"small"}
-                                                                                           shape={"circle"}
-                                                                                           icon={<LinkOutlined/>}
-                                                                                           onClick={() => {
-                                                                                               startLink(record)
-                                                                                           }}/></Tooltip></Space>
+                        return <Space>
+                                    <Tooltip title={"Link"} placement={"bottom"}>
+                                        <Button size={"small"} shape={"circle"} icon={<LinkOutlined/>}
+                                                onClick={() => {
+                                                    startLink(record)
+                                                }}/>
+                                    </Tooltip>                                    
+                                </Space>
                     })
                     }/>
                 </Table>
             </Col>
             <Col span={2} style={{paddingLeft: "2%"}}>
-                <Button type={"primary"} shape="circle" icon={<DownOutlined/>} onClick={showClasses}/>
+                <Row>
+                    <Button type={"primary"} shape="circle" icon={<DownOutlined/>} onClick={showClasses}/>
+                </Row> 
             </Col>
             <Col span={10}>
                 <Card size={"small"} loading={loading.instances} title={"Ref.: " + params.id}
