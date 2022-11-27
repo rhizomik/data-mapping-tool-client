@@ -185,7 +185,7 @@ const MyInstancesPage = () => {
                                         label={"Ontology"} 
                                         rules={[{required: false}]}
                                        hasFeedback>
-                                <Select disabled={isSuggestion} loading={ontologies.length == 0} options={ontologies}>
+                                <Select disabled={isSuggestion} loading={ontologies.length === 0} options={ontologies}>
                                 </Select>
                             </Form.Item>
 
