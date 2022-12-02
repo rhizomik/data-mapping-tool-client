@@ -1,5 +1,6 @@
 import {Select} from "antd";
 import React from "react";
+import OntologyService from "../services/OntologyService";
 import SuggestionService from "../services/SuggestionService";
 
 interface IMappingSearchSuggestionProps {
@@ -17,6 +18,7 @@ interface IMappingSearchSuggestionState {
 
 export default class MappingSearchSuggestion extends React.Component<IMappingSearchSuggestionProps, IMappingSearchSuggestionState> {
     private suggestionService = new SuggestionService();
+    private ontologyService = new OntologyService();
 
     constructor(props: any){
         super(props);
@@ -33,24 +35,34 @@ export default class MappingSearchSuggestion extends React.Component<IMappingSea
 
 
     searchProperties = (textToSearch : string) => {
-        let suggestionCaller = this.suggestionService.getSuggestedProperties;
+        const listOfSuggestions: Array<{}> = [];
         if(this.props.isMeasure){
-            suggestionCaller = this.suggestionService.getMeasureSuggestions;
+            this.ontologyService.get_measure_suggestions(textToSearch).then((res: any) => {  
+
+                Array.prototype.forEach.call(res.data.classes, element => {                    
+                    listOfSuggestions.push({value:element, label:element})           
+                  });  
+                  
+                this.setState((state: any) => ({
+                    suggestions: state.suggestions.concat(listOfSuggestions)
+                }));        
+            });
+        }
+        else{
+            this.suggestionService.getSuggestedProperties(textToSearch).then((res) => {
+                const results = res.data.results;                
+    
+                Array.prototype.forEach.call(results, element => {
+                    const name = element['prefixedName'][0];
+                    listOfSuggestions.push({value:name, label:name})           
+                  });  
+                  
+                this.setState((state: any) => ({
+                    suggestions: state.suggestions.concat(listOfSuggestions)
+                }));  
+            });
         }
 
-        suggestionCaller(textToSearch).then((res) => {
-            const results = res.data.results;
-            const listOfSuggestions: Array<{}> = [];
-
-            Array.prototype.forEach.call(results, element => {
-                const name = element['prefixedName'][0];
-                listOfSuggestions.push({value:name, label:name})           
-              });  
-              
-            this.setState((state: any) => ({
-                suggestions: state.suggestions.concat(listOfSuggestions)
-            }));  
-        });
     }
 
     render() {

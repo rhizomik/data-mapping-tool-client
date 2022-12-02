@@ -61,6 +61,7 @@ const CSVMappingColummns = (props: any) => {
         retrieveData();
     }, [current_file]);
 
+
     const updateInferences = (dataIndex: string, newValue: any) => {
         if(inferences){
             const localInferences = inferences;
@@ -110,7 +111,7 @@ const CSVMappingColummns = (props: any) => {
     const processAnnotation = (dataType: string) => {
         if(inferences){
             const type = inferences[dataType].type;
-            if(type === 'integer'){
+            if(type === 'integer' || type === 'float'){
                 return <MappingSearchSuggestion  
                             defaultValue={inferences[dataType].annotation}                           
                             isMeasure={true}
