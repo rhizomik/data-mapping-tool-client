@@ -1,4 +1,5 @@
-import { Button, Col, Row, Select, Table } from "antd";
+import { current } from "@reduxjs/toolkit";
+import { Button, Checkbox, Col, Row, Select, Table } from "antd";
 import Column from "antd/lib/table/Column";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -34,6 +35,8 @@ const CSVMappingColummns = (props: any) => {
     const navigate = useNavigate();
     const {state} = useLocation();
     const {current_file}: any = state;   
+    const [primaryKeysCandidates, setPrimaryKeysCandidates] = useState<String[]>([]);
+    const [primaryKey, setPrimaryKey] = useState<string | undefined>(undefined);
 
 
     const [columns, setColumns] = useState<any>([]);
@@ -55,10 +58,16 @@ const CSVMappingColummns = (props: any) => {
                     inferenceDict[inference.name] = inference
                 });
                 setInferences(inferenceDict);
-            } )
+            } );
+            fileService.getKeys(current_file).then((resFilename) => {
+                setPrimaryKeysCandidates(resFilename.data.columns);
+            });
+            fileService.getPrimaryKey(current_file).then((keyResponse: any) => {
+                setPrimaryKey(keyResponse.data);
+            });
         }
 
-        retrieveData();
+        retrieveData();   
     }, [current_file]);
 
 
@@ -72,7 +81,7 @@ const CSVMappingColummns = (props: any) => {
 
 
     const processDataTypeComboBox = (dataType: string) => {
-        if(inferences){
+        if(inferences){ 
             const type = inferences[dataType].type;
             return <Select
                     defaultValue={type}
@@ -132,6 +141,21 @@ const CSVMappingColummns = (props: any) => {
         }
     }
 
+    const assignPrimaryKey = (fieldName: string) => {
+        if(!primaryKey){
+            setPrimaryKey(fieldName);
+        }else{
+            setPrimaryKey(undefined);
+        }
+
+    }
+    
+    const processPrimaryKey = (dataType: string) => {
+        const isEnabled = primaryKeysCandidates.indexOf(dataType) >= 0 && (primaryKey === dataType || !primaryKey);
+        const isChecked = dataType === primaryKey;
+        return <Checkbox disabled={!isEnabled} checked={isChecked} onChange={() => {assignPrimaryKey(dataType)}}></Checkbox>        
+    }
+
     const submit = () => {
         const fileService = new FileService();
         const listOfInferences = [];
@@ -140,6 +164,7 @@ const CSVMappingColummns = (props: any) => {
             listOfInferences.push(value);            
         }
         fileService.updateInferences(current_file, listOfInferences);
+        fileService.updatePrimaryKey(current_file, primaryKey);
         navigate(-1);
     }
 
@@ -157,12 +182,17 @@ const CSVMappingColummns = (props: any) => {
                                 <Column title={"Columns"} dataIndex={"dataIndex"}/>
                                 <Column title={"Type"} dataIndex={"dataIndex"} 
                                   render={(dataIndex: string) => (                                    
-                                        processDataTypeComboBox(dataIndex)
+                                        processDataTypeComboBox(dataIndex.trim())
                                   )}
                                 />
                                 <Column title={"Annotation"} dataIndex={"dataIndex"} 
                                     render={(dataIndex: string) => (                                    
-                                        processAnnotation(dataIndex)
+                                        processAnnotation(dataIndex.trim())
+                                    )}
+                                />
+                                <Column title={"Primary key"} dataIndex={"dataIndex"} 
+                                    render={(dataIndex: string) => (                                    
+                                        processPrimaryKey(dataIndex.trim())
                                     )}
                                 />
                             </Table>
