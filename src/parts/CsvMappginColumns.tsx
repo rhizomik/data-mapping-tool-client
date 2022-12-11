@@ -27,6 +27,7 @@ interface InferenceData{
     format: string,
     name: string,
     type: string,
+    subtype: string,
     annotation?: string
 }
 
@@ -107,11 +108,12 @@ const CSVMappingColummns = (props: any) => {
     const getDefaultValueForAnnotation = (dataIndex: string) => {
         if(inferences){
             const type = inferences[dataIndex].type;
+            const subtype = inferences[dataIndex].subtype;
             const retrievedValue = inferences[dataIndex].annotation;
             if (retrievedValue){
                 return retrievedValue;
             }else{
-                return type;
+                return (subtype && subtype.length > 0) ? subtype: type;
             }
         }
         return undefined;
@@ -119,7 +121,7 @@ const CSVMappingColummns = (props: any) => {
 
     const processAnnotation = (dataType: string) => {
         if(inferences){
-            const type = inferences[dataType].type;
+            const type = inferences[dataType].type;           
             if(type === 'integer' || type === 'float'){
                 return <MappingSearchSuggestion  
                             defaultValue={inferences[dataType].annotation}                           
@@ -129,7 +131,7 @@ const CSVMappingColummns = (props: any) => {
                             }}
                             fieldName={type}>                                            
                     </MappingSearchSuggestion>
-            }else{
+            }else{                
                 return <MappingSearchSuggestion 
                             defaultValue={getDefaultValueForAnnotation(dataType)}
                             onChange={(selectedValue, option) => {
@@ -146,6 +148,15 @@ const CSVMappingColummns = (props: any) => {
             setPrimaryKey(fieldName);
         }else{
             setPrimaryKey(undefined);
+        }
+
+    }
+
+
+    const processSubType = (fieldName: string) => {
+        if(inferences){
+            const value = inferences[fieldName].subtype;            
+            return (<span>{value}</span>)
         }
 
     }
@@ -183,6 +194,11 @@ const CSVMappingColummns = (props: any) => {
                                 <Column title={"Type"} dataIndex={"dataIndex"} 
                                   render={(dataIndex: string) => (                                    
                                         processDataTypeComboBox(dataIndex.trim())
+                                  )}
+                                />
+                                <Column title={"SubType"} dataIndex={"dataIndex"} 
+                                  render={(dataIndex: string) => (                                    
+                                        processSubType(dataIndex.trim())
                                   )}
                                 />
                                 <Column title={"Annotation"} dataIndex={"dataIndex"} 
