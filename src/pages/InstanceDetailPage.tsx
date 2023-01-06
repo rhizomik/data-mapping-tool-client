@@ -236,7 +236,8 @@ const InstanceDetailPage = () => {
         
         getRelations(newInstance);
         
-        setClassSearch(values)
+        setClassSearch(values);        
+
         closeClasses();
 
         instanceService.editInstances(params.id, {
@@ -321,7 +322,7 @@ const InstanceDetailPage = () => {
         });
         setClasses(classes.concat(classesToAdd));         
         setAcceptedSearch(acceptedSearchedClasses);
-        setIsSuggestionAccepted(true);
+        setIsSuggestionAccepted(true);   
     }
 
     // Upload Modal
@@ -521,8 +522,7 @@ const InstanceDetailPage = () => {
                     current_ontology: idOntology,
                     suggest_ontology: false
                 }).then(
-                    (response) => {
-                        console.log(response);
+                    (response) => {                       
                         setInstance(response.data.instance); 
                         refreshInstance(idOntology);
                     }

@@ -51,6 +51,20 @@ class InstanceService {
         return axios.delete(this.configService.getConfig().api_url + '/instances/' + id, {headers: headers});
     }
 
+    addPrefix(idInstance: string, idPrefix: string) {
+        const headers = {
+            'Authorization': 'Bearer ' + this.authService.hasCredentials()
+        };
+        return axios.patch(this.configService.getConfig().api_url + idInstance + '/prefix/add/' + idPrefix, {}, {headers: headers});
+    }
+
+    removePrefix(idInstance: string, idPrefix: string) {
+        const headers = {
+            'Authorization': 'Bearer ' + this.authService.hasCredentials()
+        };
+        return axios.patch(this.configService.getConfig().api_url + idInstance + '/prefix/remove/' + idPrefix, {}, {headers: headers});
+    }
+
     initInstance(id: any, data: {} = {}) {
         const headers = {
             'Authorization': 'Bearer ' + this.authService.hasCredentials()

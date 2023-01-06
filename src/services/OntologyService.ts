@@ -91,7 +91,7 @@ class OntologyService {
         return axios.get(this.configService.getConfig().api_url + '/ontology/create/remote/' + vocab, {headers: headers})
     }
 
-    get_measure_suggestions(vocab: string){
+    getMeasureSuggestions(vocab: string){
         const headers = {
             'Authorization': 'Bearer ' + this.authService.hasCredentials()
         };

@@ -1,9 +1,9 @@
-import { current } from "@reduxjs/toolkit";
 import { Button, Checkbox, Col, Row, Select, Table } from "antd";
 import Column from "antd/lib/table/Column";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import FileService from "../services/FileService";
+import LovService from "../services/LovService";
 import MappingSearchSuggestion from "./MappingSearchSuggestion";
 
 const dataTypeOptions = [
@@ -23,12 +23,18 @@ const dataTypeOptions = [
 
 ]
 
+interface PrefixInfoModel{
+    prefix: string,
+    uri: string
+}
+
 interface InferenceData{
     format: string,
     name: string,
     type: string,
     subtype: string,
-    annotation?: string
+    annotation?: string,
+    prefix?: PrefixInfoModel
 }
 
 
@@ -41,7 +47,9 @@ const CSVMappingColummns = (props: any) => {
 
 
     const [columns, setColumns] = useState<any>([]);
+    const [suggerenceList, setSuggerenceList] = useState<Array<{value: string, label: string, uri: string, prefix: string}>>([]);
     const [inferences, setInferences] = useState<{[id: string]: InferenceData} | undefined>(undefined);
+    const [selectedPrefix, setSelectedPrefix] = useState<{[key: string]: {prefix: string, uri: string} }>({});
 
     useEffect(() => {
         const fileService = new FileService();
@@ -97,11 +105,11 @@ const CSVMappingColummns = (props: any) => {
         }
     }
 
-    const assignAnnotation = (value: string, dataIndex: string) => {
+    const assignAnnotation = (value: string, dataIndex: string) => {        
         if(inferences){
             const localInferences = inferences;
-            localInferences[dataIndex].annotation = value;
-            setInferences(localInferences);
+            localInferences[dataIndex].annotation = value;      
+            setInferences(localInferences);            
         }
     }
 
@@ -119,6 +127,20 @@ const CSVMappingColummns = (props: any) => {
         return undefined;
     }
 
+    const saveSuggestionList = (suggestionList: Array<{value: string, label: string, uri: string, prefix: string}>) => {
+        setSuggerenceList(suggestionList);
+    }
+
+
+    const setSuggestionPrefixData = (name: string, uri: string, datatype: string) => {
+        if(inferences){
+            const prefix = name.split('.')[0];        
+            const localInferences = inferences;
+            localInferences[datatype].prefix = {'prefix': prefix, 'uri': uri};      
+            setInferences(localInferences);            
+        }    
+    }
+    
     const processAnnotation = (dataType: string) => {
         if(inferences){
             const type = inferences[dataType].type;           
@@ -126,16 +148,24 @@ const CSVMappingColummns = (props: any) => {
                 return <MappingSearchSuggestion  
                             defaultValue={inferences[dataType].annotation}                           
                             isMeasure={true}
+                            suggestions={saveSuggestionList}
                             onChange={(selectedValue, option) => {
-                                assignAnnotation(selectedValue, dataType)
+                                assignAnnotation(selectedValue, dataType);                             
+                            }}
+                            notifySelectedPrefix={(name: string, uri: string)=> {
+                                setSuggestionPrefixData(name, uri, dataType);
                             }}
                             fieldName={type}>                                            
                     </MappingSearchSuggestion>
             }else{                
                 return <MappingSearchSuggestion 
                             defaultValue={getDefaultValueForAnnotation(dataType)}
+                            suggestions={saveSuggestionList}
                             onChange={(selectedValue, option) => {
                                 assignAnnotation(selectedValue, dataType)
+                            }}
+                            notifySelectedPrefix={(name: string, uri: string)=> {
+                                setSuggestionPrefixData(name, uri, dataType);
                             }}
                             fieldName={type}>                                            
                     </MappingSearchSuggestion>
@@ -176,6 +206,7 @@ const CSVMappingColummns = (props: any) => {
         }
         fileService.updateInferences(current_file, listOfInferences);
         fileService.updatePrimaryKey(current_file, primaryKey);
+        console.log(selectedPrefix);
         navigate(-1);
     }
 
