@@ -1,6 +1,8 @@
 # Data Mapping Tool
 
-This repository is the `fronted` part of the Data Mapping Tool Project. This part uses `React.js` + `Typescript` to
+This repository is the `fronted` part of the Data Mapping Tool Project. You can check the back-end side at https://github.com/jorgechp/data-mapping-tool-api 
+
+This part uses `React.js` + `Typescript` to
 develop the user's visual interface to interact with our [API](https://github.com/elskater98/data-mapping-tool-api).
 Furthermore, the project aims to make the process of mapping data using a single ontology or multiple ones. In our case,
 the the project uses the BIGG ontology as background.
