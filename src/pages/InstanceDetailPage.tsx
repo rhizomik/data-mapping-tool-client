@@ -466,8 +466,9 @@ const InstanceDetailPage = () => {
         setIsSearchStarted(false);
     }
 
-    const searchClasses = (textToSearch : string) => {
-
+    const searchClasses = (event: any) => {
+        const textToSearch = event.target.value;        
+        
         suggestionService.getSuggestedClasses(textToSearch).then((res) => {
             const results = res.data.results;
             const listOfSuggestions: Array<{}> = [];
@@ -478,8 +479,10 @@ const InstanceDetailPage = () => {
                 const className = name.split(':')[1];
                 const labelText = className + " (Ontology: "+ ontoName +")";
                 listOfSuggestions.push({value:ontoName, label:labelText})           
-              });            
-            setSearchedClasses(searchedClasses.concat(listOfSuggestions));                 
+              });    
+            console.log(searchedClasses);        
+            console.log(listOfSuggestions);        
+            setSearchedClasses(listOfSuggestions);                 
         });
     }
 
@@ -515,7 +518,8 @@ const InstanceDetailPage = () => {
     }
 
     const createRemoteOntologies = () =>{
-        ontologyService.create_ontology_from_remote_source("dbpedia-owl").then(
+        console.log(acceptedSearch);
+        ontologyService.create_ontology_from_remote_source(acceptedSearch).then(
             (response: any) => {       
                 const idOntology = response.data.id;  
                 instanceService.editInstances(instance._id, {
@@ -591,12 +595,11 @@ const InstanceDetailPage = () => {
                 <Button onClick={acceptSuggestions} disabled={isSuggestionAccepted}>Accept suggestion</Button> 
                 <br/>
                 <label>Or search classes to extract an ontology</label> 
+                <Input disabled={isSuggestionAccepted} onChange={searchClasses} placeholder="Type the name of a class to find suitable ontologies"></Input>
                 <Select
-                    disabled={isSuggestionAccepted}               
-                    allowClear style={{ width: '100%' }} 
-                    showSearch
-                    placeholder="Classs suggestions" 
-                    onSearch={searchClasses}
+                    disabled={isSuggestionAccepted}                                  
+                    allowClear style={{ width: '100%' }}                     
+                    placeholder="Classs suggestions"                  
                     onChange={handleSearchedClasses}
                     options={searchedClasses}>               
                 </Select>
