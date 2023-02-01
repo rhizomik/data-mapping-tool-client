@@ -478,7 +478,8 @@ const InstanceDetailPage = () => {
                 const className = name.split(':')[1];
                 const labelText = className + " (Ontology: "+ ontoName +")";
                 listOfSuggestions.push({value:ontoName, label:labelText})           
-              });           
+              });    
+       
             setSearchedClasses(listOfSuggestions);                 
         });
     }
@@ -562,7 +563,7 @@ const InstanceDetailPage = () => {
                 <Form.Item name={"select"} label={"Classes"} rules={[{required: true}]}>
                     <Select mode="multiple"                      
                             placeholder="Select the class/es that you would like to map."
-                            options={suggestedClasses}/>
+                            options={classes}/>
                 </Form.Item>   
             </Form>
             <Divider/>
