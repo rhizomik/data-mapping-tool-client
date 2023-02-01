@@ -197,8 +197,7 @@ const InstanceDetailPage = () => {
     }
 
     const getRelations = (instance: any) => {
-        ontologyService.getRelationsBetweenClasses(instance.current_ontology, {classes: instance.classes_to_map}).then((res) => {
-            console.log(res);
+        ontologyService.getRelationsBetweenClasses(instance.current_ontology, {classes: instance.classes_to_map}).then((res) => {          
             let rel = Object.keys(res.data.relations).map((rel: string) => {
                 return instance.relations[rel]
             })
@@ -479,9 +478,7 @@ const InstanceDetailPage = () => {
                 const className = name.split(':')[1];
                 const labelText = className + " (Ontology: "+ ontoName +")";
                 listOfSuggestions.push({value:ontoName, label:labelText})           
-              });    
-            console.log(searchedClasses);        
-            console.log(listOfSuggestions);        
+              });           
             setSearchedClasses(listOfSuggestions);                 
         });
     }
@@ -517,8 +514,7 @@ const InstanceDetailPage = () => {
         )
     }
 
-    const createRemoteOntologies = () =>{
-        console.log(acceptedSearch);
+    const createRemoteOntologies = () =>{      
         ontologyService.create_ontology_from_remote_source(acceptedSearch).then(
             (response: any) => {       
                 const idOntology = response.data.id;  
