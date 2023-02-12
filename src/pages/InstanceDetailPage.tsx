@@ -518,23 +518,26 @@ const InstanceDetailPage = () => {
     const createRemoteOntologies = () =>{      
         ontologyService.create_ontology_from_remote_source(acceptedSearch).then(
             (response: any) => {       
-                const idOntology = response.data.id;  
-                instanceService.editInstances(instance._id, {
-                    current_ontology: idOntology,
-                    suggest_ontology: false
-                }).then(
-                    (response) => {                       
-                        setInstance(response.data.instance); 
-                        refreshInstance(idOntology);
-                    }
-                )
-                .catch((err) => {
-                    message.error(err.toString())
-                });      
-                
-                setIsOntologyReady(true);                
+                if (response.status === 200){
+                    const idOntology = response.data.id;  
+                    instanceService.editInstances(instance._id, {
+                        current_ontology: idOntology,
+                        suggest_ontology: false
+                    }).then(
+                        (response) => {                       
+                            setInstance(response.data.instance); 
+                            refreshInstance(idOntology);
+                        }
+                    )        
+                    
+                    setIsOntologyReady(true);     
+                }else{
+                    message.error("There was an error parsing the ontology selected.");
+                }           
             }
-        )
+        ).catch((err) => {
+            message.error(err.toString())
+        });  
     }
 
     const dataverseSearch = () => {
