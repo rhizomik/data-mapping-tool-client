@@ -592,7 +592,7 @@ const InstanceDetailPage = () => {
                     onChange={handleSuggestedClasses}
                     options={suggestedClasses}>               
                 </Select>
-                <Button onClick={acceptSuggestions} disabled={isSuggestionAccepted}>Accept suggestion</Button> 
+                <Button onClick={acceptSuggestions} disabled={isSuggestionAccepted || acceptedSuggestedClasses === ""}>Accept suggestion</Button> 
                 <br/>
                 <label>Or search classes to extract an ontology</label> 
                 <Input disabled={isSuggestionAccepted} onChange={searchClasses} placeholder="Type the name of a class to find suitable ontologies"></Input>
@@ -603,7 +603,7 @@ const InstanceDetailPage = () => {
                     onChange={handleSearchedClasses}
                     options={searchedClasses}>               
                 </Select>
-                <Button onClick={acceptSearch} disabled={isSuggestionAccepted}>Accept selection</Button>  
+                <Button onClick={acceptSearch} disabled={isSuggestionAccepted || acceptedSearchedClasses === ""}>Accept selection</Button>  
                 <br/>
                 <label>Accepted class: {acceptedSearch}</label> 
                 <br/>
