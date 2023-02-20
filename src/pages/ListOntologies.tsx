@@ -202,7 +202,7 @@ const ListOntologies = () => {
                         <Tabs.TabPane tab="Upload from computer" key="item-1">
                         <Form.Item name={"file"} label={"Upload Ontology"}
                                    rules={[{required: true}]}>
-                            <Dragger accept={".owl"}
+                            <Dragger accept={".owl,.rdf,.nt,.ttl"}
                                      disabled={fileAccess === "" || createForm.getFieldValue("ontology_name") === undefined}
                                      action={configService.api_url + "/ontology/" + createForm.getFieldValue("ontology_name")}
                                      headers={{Authorization: "Bearer " + authService.hasCredentials()}}
