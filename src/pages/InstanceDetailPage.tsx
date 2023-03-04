@@ -772,7 +772,7 @@ const InstanceDetailPage = () => {
 
         {/* Content */}
         <Row justify="center" style={{marginBottom: "3vh"}}>
-            <Button onClick={navigateToMapping}>Annotate csv file</Button>
+            {/* <Button onClick={navigateToMapping}>Annotate csv file</Button> */}
         </Row>  
         <Row>
             <Col span={1}/>

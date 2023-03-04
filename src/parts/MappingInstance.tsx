@@ -5,17 +5,41 @@ import InstanceService from "../services/InstanceService";
 import FileService from "../services/FileService";
 import OntologyService from "../services/OntologyService";
 import {LockOutlined, QuestionCircleOutlined, TableOutlined, UnlockOutlined} from "@ant-design/icons";
+import MappingSearchSuggestion from "./MappingSearchSuggestion";
 
 
 const {Column} = Table;
 
+interface PrefixInfoModel{
+    prefix: string,
+    uri: string
+}
 
 interface InferenceData{
     format: string,
     name: string,
     type: string,
-    annotation?: string
+    subtype: string,
+    annotation?: string,
+    prefix?: PrefixInfoModel
 }
+
+const dataTypeOptions = [
+    {
+        value: 'string',
+        label: 'String'   
+    },{
+        value: 'integer',
+        label: 'Integer'   
+    },{
+        value: 'float',
+        label: 'Float'   
+    },{
+        value: 'geopoint',
+        label: 'Geopoint'   
+    }
+
+]
 
 const MappingInstance = (props: any) => {
 
@@ -34,7 +58,10 @@ const MappingInstance = (props: any) => {
     const [instance, setInstance] = useState<any>({})
     const [properties, setProperties] = useState<any>([])
     const [mapping, setMapping] = useState<any>({})
+    const [typeValues, setTypeValues] = useState<any>({})
+    const [isMappingSelected, setIsMappingSelected] = useState<boolean>(false);
     const [inferences, setInferences] = useState<{[id: string]: InferenceData} | undefined>(undefined)
+    const [suggerenceList, setSuggerenceList] = useState<Array<{value: string, label: string, uri: string, prefix: string}>>([]);
 
     const [lock, setLock] = useState(true);
     const [sampleVisible, setSampleVisible] = useState(false);
@@ -127,8 +154,8 @@ const MappingInstance = (props: any) => {
         navigate(-1);
     }
 
-    const onChangeTable = (selectedValue: any, ontology_value: any) => {
-        setMapping({...mapping, [ontology_value.name]: selectedValue});
+    const onChangeTable = (selectedValue: any, ontology_value: any) => {        
+        setMapping({...mapping, [ontology_value.name]: selectedValue}); 
     }
 
 
@@ -151,6 +178,116 @@ const MappingInstance = (props: any) => {
 
     const closeSampleModal = () => {
         setSampleVisible(false);
+    }
+
+    const updateInferences = (dataIndex: string, newValue: any) => {
+        if(inferences){
+            const localInferences = inferences;
+            localInferences[dataIndex].type = newValue;
+            setInferences(localInferences);
+            setTypeValues({...typeValues, [dataIndex]: newValue}); 
+            assignAnnotation('', dataIndex);
+        }
+    }
+
+    const processDataTypeComboBox = (key: string) => {
+        const keySplitted = key.split(':');
+        const nameOfKey = keySplitted[keySplitted.length - 1];
+        if(inferences && nameOfKey !== undefined){  
+            const columnName = mapping[nameOfKey];   
+
+            if(columnName){  
+                if(!(columnName in typeValues)){
+                    setTypeValues({...typeValues, [columnName]: inferences[columnName].type}); 
+                }                                
+                return <Select
+                        value={typeValues[columnName]}
+                        options={dataTypeOptions}
+                        onChange={(selectedValue, option) => {
+                                updateInferences(columnName, selectedValue)
+                            }                        
+                        }
+                    >
+                </Select>
+            }
+
+        }
+    }
+
+
+    const assignAnnotation = (value: string, dataIndex: string) => {        
+        if(inferences){
+            const localInferences = inferences;
+            localInferences[dataIndex].annotation = value;      
+            setInferences(localInferences);            
+        }
+    }
+
+    const setSuggestionPrefixData = (name: string, uri: string, datatype: string) => {
+        if(inferences){
+            const prefix = name.split('.')[0];        
+            const localInferences = inferences;
+            localInferences[datatype].prefix = {'prefix': prefix, 'uri': uri};      
+            setInferences(localInferences);            
+        }    
+    }
+
+    const getDefaultValueForAnnotation = (dataIndex: string) => {
+        if(inferences){
+            const type = inferences[dataIndex].type;
+            const subtype = inferences[dataIndex].subtype;
+            const retrievedValue = inferences[dataIndex].annotation;
+            if (retrievedValue){
+                return retrievedValue;
+            }else{
+                return (subtype && subtype.length > 0) ? subtype: type;
+            }
+        }
+        return undefined;
+    }
+
+    const saveSuggestionList = (suggestionList: Array<{value: string, label: string, uri: string, prefix: string}>) => {
+        setSuggerenceList(suggestionList);
+    }
+
+    const processAnnotation = (key: string) => {
+        const keySplitted = key.split(':');
+        const nameOfKey = keySplitted[keySplitted.length - 1];
+        if(inferences && nameOfKey !== undefined){     
+            const columnName = mapping[nameOfKey];
+
+            if(!columnName){  
+                return;
+            }
+            const type = inferences[columnName].type;        
+ 
+            if(type === 'integer' || type === 'float'){
+                return <MappingSearchSuggestion  
+                            defaultValue={inferences[columnName].annotation}                           
+                            isMeasure={true}
+                            suggestions={saveSuggestionList}
+                            onChange={(selectedValue, option) => {
+                                assignAnnotation(selectedValue, columnName);                             
+                            }}
+                            notifySelectedPrefix={(name: string, uri: string)=> {
+                                setSuggestionPrefixData(name, uri, columnName);
+                            }}
+                            fieldName={type}>                                            
+                    </MappingSearchSuggestion>
+            }else{                
+                return <MappingSearchSuggestion 
+                            defaultValue={getDefaultValueForAnnotation(columnName)}
+                            suggestions={saveSuggestionList}
+                            onChange={(selectedValue, option) => {
+                                assignAnnotation(selectedValue, columnName)
+                            }}
+                            notifySelectedPrefix={(name: string, uri: string)=> {
+                                setSuggestionPrefixData(name, uri, columnName);
+                            }}
+                            fieldName={type}>                                            
+                    </MappingSearchSuggestion>
+            }
+        }
     }
 
 
@@ -209,6 +346,16 @@ const MappingInstance = (props: any) => {
                                 }}/>
                             </>)
                         }}/>
+                        <Column title={"Type"} dataIndex={"value"} 
+                                  render={(dataIndex: string) => (                                                                
+                                        processDataTypeComboBox(dataIndex.trim())
+                                  )}
+                        />
+                        <Column title={"Annotation"} dataIndex={"value"} 
+                                    render={(dataIndex: string) => (                                    
+                                        processAnnotation(dataIndex.trim())
+                                    )}
+                        />
                     </Table>
                 </Col>
             </Row>
