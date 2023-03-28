@@ -5,7 +5,7 @@ import SuggestionService from "../services/SuggestionService";
 
 interface IMappingSearchSuggestionProps {
     fieldName: string;
-    defaultValue?: string;
+    defaultValue?: string | string [];
     isMeasure?: boolean;
     suggestions?: any;
     notifySelectedPrefix?: any;
@@ -21,7 +21,7 @@ interface IMappingSearchSuggestionState {
 export default class MappingSearchSuggestion extends React.Component<IMappingSearchSuggestionProps, IMappingSearchSuggestionState> {
     private suggestionService = new SuggestionService();
     private ontologyService = new OntologyService();
-    private prefixDict: { [key: string]: string }  = {};
+    private prefixDict: { [key: string]: string[] }  = {};
 
     
     
@@ -48,7 +48,7 @@ export default class MappingSearchSuggestion extends React.Component<IMappingSea
             this.ontologyService.getMeasureSuggestions(textToSearch).then((res: any) => {
                 Array.prototype.forEach.call(res.data.classes, element => {  
                     listOfSuggestions.push({value:element, label:element, uri: uri, prefix: prefix});   
-                    this.prefixDict[element] = uri;        
+                    // this.prefixDict[element] = uri;        
                   });  
                   
                 this.setState((state: any) => ({
@@ -81,24 +81,35 @@ export default class MappingSearchSuggestion extends React.Component<IMappingSea
 
     }
 
-    annotateChange(selectedValue: string, option: never[]) { 
+    annotateChange(selectedValue: string[], option: never[]) { 
         if(this.props.onChange){
-            this.props.onChange(selectedValue, option);
+            this.props.onChange(selectedValue, option);           
         }
-        if(this.props.notifySelectedPrefix){
-            this.props.notifySelectedPrefix(selectedValue, this.prefixDict[selectedValue]);
-        }        
+        // if(this.props.notifySelectedPrefix){
+        //     this.props.notifySelectedPrefix(selectedValue, this.prefixDict[selectedValue]);
+        // }        
+    }
+
+    getDefaultValue(): string[] | undefined{
+        if(this.props.defaultValue){
+            if (Array.isArray(this.props.defaultValue)){
+                return this.props.defaultValue;
+            }
+            return [this.props.defaultValue]
+        }
+        return undefined;
     }
 
     render() {
         return  <Select  
+                    mode="multiple"
                     showSearch={true}             
                     allowClear style={{ width: '100%' }} 
                     placeholder="Properties suggestions"                    
                     options={this.state.suggestions}
                     onSearch={this.searchProperties}
                     onChange={this.annotateChange}
-                    defaultValue={this.props.defaultValue}
+                    defaultValue={this.getDefaultValue()}
                     defaultActiveFirstOption
                     >               
                 </Select>

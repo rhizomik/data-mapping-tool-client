@@ -20,7 +20,7 @@ interface InferenceData{
     name: string,
     type: string,
     subtype: string,
-    annotation?: string,
+    annotation?: string | string[] | undefined,
     prefix?: PrefixInfoModel
 }
 
