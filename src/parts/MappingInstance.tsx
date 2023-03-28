@@ -20,7 +20,7 @@ interface InferenceData{
     name: string,
     type: string,
     subtype: string,
-    annotation?: string,
+    annotation?: string | string[] | undefined,
     prefix?: PrefixInfoModel
 }
 
@@ -339,6 +339,7 @@ const MappingInstance = (props: any) => {
                             return (<>
                                 <Select style={{width: "50vh"}}
                                         showSearch
+                                        allowClear={true}
                                         loading={loading.instance}
                                         value={mapping[ontology_value.name]}
                                         options={columns} onChange={(selectedValue, option) => {
