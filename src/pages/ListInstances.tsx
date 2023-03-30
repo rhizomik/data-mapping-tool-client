@@ -34,6 +34,7 @@ import InstanceService from "../services/InstanceService";
 import {useForm} from "antd/es/form/Form";
 import OntologyService from "../services/OntologyService";
 import fileDownload from "js-file-download";
+import SearchDataverse from "../parts/SearchDataverse";
 
 const {Dragger} = Upload;
 
@@ -53,17 +54,23 @@ const MyInstancesPage = () => {
     const [searchInput] = useState("");
     const [visible, setVisible] = useState(false);
     const [isSuggestion, setSuggestion] = useState(false);
+    const [dataSourceFileName, setDataSourceFileName] = useState('');
 
 
     // Form
     const [form] = useForm();
 
     const onFinish = (values: any) => {
-        values['filenames'] = values.upload_file.fileList.map((i: any) => {
-            return i.name
-        });
+        if(dataSourceFileName.length > 0){
+            values['filenames'] = [dataSourceFileName];
+        }else{
+            values['filenames'] = values.upload_file.fileList.map((i: any) => {
+                return i.name
+            });
+            delete values.upload_file;
+        }
 
-        delete values.upload_file;
+        
         values['suggest_ontology'] = isSuggestion;
         instanceService.createInstances(values).then((res) => {
             const instance = res.data.instance
@@ -158,6 +165,10 @@ const MyInstancesPage = () => {
         setSuggestion(e.target.checked);  
     }
 
+    const notifyDataverseSelectedFile = (file:string) => {
+        setDataSourceFileName(file);
+    }
+
     return (<Fragment>
 
             <Modal
@@ -194,7 +205,7 @@ const MyInstancesPage = () => {
                         <Col span={10}>
                             <Tabs >
                             <Tabs.TabPane tab="Upload from computer" key="item-1">
-                                <Form.Item name={"upload_file"} label={"Upload Data"} rules={[{required: true}]}>
+                                <Form.Item name={"upload_file"} label={"Upload Data"} rules={[{required: false}]}>
                                     <Dragger accept={".csv"}
                                             action={configService.api_url + "/files/upload"}
                                             headers={{Authorization: "Bearer " + authService.hasCredentials()}}
@@ -212,6 +223,7 @@ const MyInstancesPage = () => {
                                 </Form.Item>
                         </Tabs.TabPane>
                         <Tabs.TabPane tab="Download from Dataverse" key="item-2">
+                            <SearchDataverse onSelectedFile={notifyDataverseSelectedFile}></SearchDataverse>
                         </Tabs.TabPane>
                         </Tabs>
                         </Col>
