@@ -909,7 +909,7 @@ const InstanceDetailPage = () => {
                                         <Tooltip title={"Map"} placement={"bottom"}><Button size={"small"}
                                                                                           shape={"circle"}
                                                                                           icon={<AppstoreAddOutlined/>}
-                                                                                          onClick={() => prepareDuplicateMapping(value)}/>
+                                                                                          onClick={() => isDuplicated(value)?prepareDuplicateMapping(value):startMapping(value,-1)}/>
                                         </Tooltip>
                                         <Tooltip title={"Duplicate"} placement={"bottom"}><Button size={"small"}
                                                                                           shape={"circle"}
