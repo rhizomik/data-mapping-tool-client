@@ -45,7 +45,7 @@ const MappingInstance = (props: any) => {
 
     const {state} = useLocation();
     const navigate = useNavigate();
-    const {_id, _class, files, current_file}: any = state;
+    const {_id, _duplicated_id, _class, files, current_file}: any = state;
 
     const instanceService = new InstanceService();
     const ontologyService = new OntologyService();
@@ -94,8 +94,12 @@ const MappingInstance = (props: any) => {
         instanceService.getInstance(_id).then((res) => {
             setInstance(res.data.data);            
             if(res.data.data.mapping.hasOwnProperty(_class)){
-                setMapping(res.data.data.mapping[_class].columns);
-                setSubject(res.data.data.mapping[_class].subject);                      
+                let mapping = res.data.data.mapping[_class];
+                if(_duplicated_id !== -1){ // Is a class duplication
+                    mapping = mapping[_duplicated_id];
+                }
+                setMapping(mapping.columns);
+                setSubject(mapping.subject);                      
                 if(res.data.data.current_ontology.length > 0){
                     getOntology(res.data.data.current_ontology); 
                 }                                
@@ -138,10 +142,17 @@ const MappingInstance = (props: any) => {
 
 
     const submit = () => {
-        let newInstance = instance;       
-        newInstance.mapping[_class].columns = mapping;
-        newInstance.mapping[_class].fileSelected = selectedFile;
-        newInstance.mapping[_class].subject = subject;
+        let newInstance = instance;
+        
+        if(_duplicated_id !== -1){// Is a class duplication
+            newInstance.mapping[_class][_duplicated_id].columns = mapping;
+            newInstance.mapping[_class][_duplicated_id].fileSelected = selectedFile;
+            newInstance.mapping[_class][_duplicated_id].subject = subject;          
+        }else{
+            newInstance.mapping[_class].columns = mapping;
+            newInstance.mapping[_class].fileSelected = selectedFile;
+            newInstance.mapping[_class].subject = subject;     
+        }
         instanceService.editInstances(_id, {mapping: newInstance.mapping}).catch((err) => {
             message.error(err.toString())
         })
@@ -401,7 +412,7 @@ const MappingInstance = (props: any) => {
                                         loading={loading.instance}
                                         value={mapping[ontology_value.name]}
                                         options={columns} onChange={(selectedValue, option) => {
-                                    onChangeTable(selectedValue, ontology_value)
+                                            onChangeTable(selectedValue, ontology_value)
                                 }}/>
                             </>)
                         }}/>
