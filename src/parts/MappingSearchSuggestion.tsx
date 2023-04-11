@@ -90,17 +90,22 @@ export default class MappingSearchSuggestion extends React.Component<IMappingSea
         // }        
     }
 
-    getDefaultValue(): string[] | undefined{
+    getDefaultValue(): string[]{
         if(this.props.defaultValue){
-            if (Array.isArray(this.props.defaultValue)){
-                return this.props.defaultValue;
+            const value = this.props.defaultValue;
+            if (Array.isArray(value) ){
+                return value;
             }
-            return [this.props.defaultValue]
+            return [value]
         }
-        return undefined;
+        return [''];
     }
 
     render() {
+        const defaultValue = this.getDefaultValue();
+        if(defaultValue === undefined){
+            return <div></div>
+        }
         return  <Select  
                     mode="multiple"
                     showSearch={true}             
@@ -109,7 +114,7 @@ export default class MappingSearchSuggestion extends React.Component<IMappingSea
                     options={this.state.suggestions}
                     onSearch={this.searchProperties}
                     onChange={this.annotateChange}
-                    defaultValue={this.getDefaultValue()}
+                    defaultValue={defaultValue}
                     defaultActiveFirstOption
                     >               
                 </Select>

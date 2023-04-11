@@ -20,7 +20,7 @@ interface InferenceData{
     name: string,
     type: string,
     subtype: string,
-    annotation?: string | string[] | undefined,
+    annotation: string | string[],
     prefix?: PrefixInfoModel
 }
 
@@ -45,7 +45,7 @@ const MappingInstance = (props: any) => {
 
     const {state} = useLocation();
     const navigate = useNavigate();
-    const {_id, _class, files, current_file}: any = state;
+    const {_id, _duplicated_id, _class, files, current_file}: any = state;
 
     const instanceService = new InstanceService();
     const ontologyService = new OntologyService();
@@ -94,8 +94,12 @@ const MappingInstance = (props: any) => {
         instanceService.getInstance(_id).then((res) => {
             setInstance(res.data.data);            
             if(res.data.data.mapping.hasOwnProperty(_class)){
-                setMapping(res.data.data.mapping[_class].columns);
-                setSubject(res.data.data.mapping[_class].subject);                      
+                let mapping = res.data.data.mapping[_class];
+                if(_duplicated_id !== -1){ // Is a class duplication
+                    mapping = mapping[_duplicated_id];
+                }
+                setMapping(mapping.columns);
+                setSubject(mapping.subject);                      
                 if(res.data.data.current_ontology.length > 0){
                     getOntology(res.data.data.current_ontology); 
                 }                                
@@ -138,10 +142,17 @@ const MappingInstance = (props: any) => {
 
 
     const submit = () => {
-        let newInstance = instance;       
-        newInstance.mapping[_class].columns = mapping;
-        newInstance.mapping[_class].fileSelected = selectedFile;
-        newInstance.mapping[_class].subject = subject;
+        let newInstance = instance;
+        
+        if(_duplicated_id !== -1){// Is a class duplication
+            newInstance.mapping[_class][_duplicated_id].columns = mapping;
+            newInstance.mapping[_class][_duplicated_id].fileSelected = selectedFile;
+            newInstance.mapping[_class][_duplicated_id].subject = subject;          
+        }else{
+            newInstance.mapping[_class].columns = mapping;
+            newInstance.mapping[_class].fileSelected = selectedFile;
+            newInstance.mapping[_class].subject = subject;     
+        }
         instanceService.editInstances(_id, {mapping: newInstance.mapping}).catch((err) => {
             message.error(err.toString())
         })
@@ -195,20 +206,27 @@ const MappingInstance = (props: any) => {
         const nameOfKey = keySplitted[keySplitted.length - 1];
         if(inferences && nameOfKey !== undefined){  
             const columnName = mapping[nameOfKey];   
+            let type = 'integer';
+            const isArray = Array.isArray(columnName);
+            const isRealArray = isArray && columnName.length  > 1;
+
+
 
             if(columnName){  
                 if(!(columnName in typeValues)){
-                    setTypeValues({...typeValues, [columnName]: inferences[columnName].type}); 
+                    if (!isArray || !isRealArray ){     
+                        return <Select
+                                    value={type}
+                                    options={dataTypeOptions}
+                                    onChange={(selectedValue, option) => {
+                                            updateInferences(columnName, selectedValue)
+                                        }                        
+                                    }
+                                >
+                            </Select>
+                    }                  
                 }                                
-                return <Select
-                        value={typeValues[columnName]}
-                        options={dataTypeOptions}
-                        onChange={(selectedValue, option) => {
-                                updateInferences(columnName, selectedValue)
-                            }                        
-                        }
-                    >
-                </Select>
+                
             }
 
         }
@@ -218,7 +236,12 @@ const MappingInstance = (props: any) => {
     const assignAnnotation = (value: string, dataIndex: string) => {        
         if(inferences){
             const localInferences = inferences;
-            localInferences[dataIndex].annotation = value;      
+            if(Array.isArray(dataIndex)){
+                dataIndex.forEach(element => {localInferences[element].annotation = value; })
+            }else{
+                localInferences[dataIndex].annotation = value;
+            }
+            
             setInferences(localInferences);            
         }
     }
@@ -250,6 +273,24 @@ const MappingInstance = (props: any) => {
         setSuggerenceList(suggestionList);
     }
 
+    const processAnnotationElements = (annotation: string | string[] | undefined) =>{
+        if(!annotation){
+            return [];
+        }
+        if(Array.isArray(annotation)){
+            let response = [];
+            for(let i = 0; i < annotation.length; ++i){
+                response.push(annotation[i]);
+            }
+            return response;           
+        }else{
+            return [annotation];
+        }
+        
+
+
+    }
+
     const processAnnotation = (key: string) => {
         const keySplitted = key.split(':');
         const nameOfKey = keySplitted[keySplitted.length - 1];
@@ -259,11 +300,38 @@ const MappingInstance = (props: any) => {
             if(!columnName){  
                 return;
             }
-            const type = inferences[columnName].type;        
+
+            let type = 'string';
+            if(Array.isArray(columnName)){
+                let isNumeric = true;
+                 columnName.forEach(element => {
+                    const elementType = inferences[element].type;
+                    if(elementType !== 'integer' && elementType !== 'float'){
+                        isNumeric = false;
+                    }
+                    if(isNumeric){
+                        type = 'integer';
+                    }                   
+                 })
+            }else{
+                type = inferences[columnName].type; 
+            }
+                  
+            let annotation: string[] = [];
+            if(Array.isArray(columnName)){              
+                for(let i = 0; i < columnName.length; ++i){        
+                    annotation = [...annotation, ...processAnnotationElements(inferences[columnName[i]].annotation)]; 
+                }
+            }else{
+                annotation.push(columnName);
+            }   
+            annotation = annotation.filter(function(item, pos) {
+                return annotation.indexOf(item) === pos;
+            })
  
             if(type === 'integer' || type === 'float'){
                 return <MappingSearchSuggestion  
-                            defaultValue={inferences[columnName].annotation}                           
+                            defaultValue={annotation}                           
                             isMeasure={true}
                             suggestions={saveSuggestionList}
                             onChange={(selectedValue, option) => {
@@ -338,12 +406,13 @@ const MappingInstance = (props: any) => {
                         <Column title={"Data set column"} render={(ontology_value, record, index) => {
                             return (<>
                                 <Select style={{width: "50vh"}}
+                                        mode="multiple"
                                         showSearch
                                         allowClear={true}
                                         loading={loading.instance}
                                         value={mapping[ontology_value.name]}
                                         options={columns} onChange={(selectedValue, option) => {
-                                    onChangeTable(selectedValue, ontology_value)
+                                            onChangeTable(selectedValue, ontology_value)
                                 }}/>
                             </>)
                         }}/>

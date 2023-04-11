@@ -34,6 +34,7 @@ import {
     CloudDownloadOutlined,
     CloudUploadOutlined,
     DownOutlined,
+    DeleteOutlined,
     FileSearchOutlined,
     InboxOutlined,
     LinkOutlined,
@@ -94,7 +95,10 @@ const InstanceDetailPage = () => {
     const [ontologies, setOntologies] = useState<any>([]);
 
     //References
-
+    const [handleDuplicatedModalCaller, setHandleDuplicatedModalCaller] = useState<string>("");
+    const [duplicatedSelectedClass, setDuplicatedSelectedClass] = useState<string>("");
+    const [duplicatedSelectedIndex, setDuplicatedSelectedIndex] = useState<number>(0);
+    
     // Search
     const [classSearch, setClassSearch] = useState<any>([])
     const [relationSearch, setRelationSearch] = useState<any>([])
@@ -104,6 +108,7 @@ const InstanceDetailPage = () => {
     const [visibleEditInstance, setVisibleEditInstance] = useState(false);
     const [visibleUpload, setVisibleUpload] = useState(false);
     const [lock, setLock] = useState(true);
+    const [duplicatedModalOpen, setDuplicatedModalOpen] = useState(false);
 
     // Forms
     const [classesForm] = useForm();
@@ -184,6 +189,21 @@ const InstanceDetailPage = () => {
                 
             });       
         }
+
+    const filteredList = (listOfData: any) => {
+        const listOfLabels: string[] = [];
+        const filteredList = [];
+        const receivedData = listOfData;
+
+        for(let i = 0; i < receivedData.length; ++i){
+            const element = receivedData[i];
+            if(listOfLabels.indexOf(element['label']) === -1){
+                filteredList.push(element);
+                listOfLabels.push(element['label']);
+            }
+        }
+        return receivedData;
+    }
 
     const getClasses = (id: string) => {
         setLoading({...loading, classes: true})
@@ -373,22 +393,101 @@ const InstanceDetailPage = () => {
         })
     }
 
+    const prepareDuplicateMapping = (value: string) =>{
+        setDuplicatedModalOpen(true);
+        setDuplicatedSelectedClass(value);
+        setHandleDuplicatedModalCaller("mapping");
+    }
+
+    const prepareDuplicateRemove = (value: string) =>{
+        setDuplicatedModalOpen(true);
+        setDuplicatedSelectedClass(value);
+        setHandleDuplicatedModalCaller("delete");
+    }
+
     // Mapping
 
-    const startMapping = (_class: string) => {
-     
+    const startMapping = (_class: string, duplicatedIndex: number) => {       
+        const mappingElement = instance['mapping'][_class];
+        //If the class is currently duplicated.
+        let mapping = mappingElement;      
+        if(Array.isArray(mappingElement)){
+            mapping = mappingElement[duplicatedIndex];
+        }
         navigate('mapping', {
             state: {
                 _id: params.id,
+                _duplicated_id: duplicatedIndex,
                 _class: _class,
-                subject: (!instance['suggest_ontology']) ? instance.mapping[_class].subject: '',
-                current_file: (!instance['suggest_ontology']) ? instance.mapping[_class].fileSelected: instance['filenames'][0],
+                subject: (!instance['suggest_ontology']) ? mapping.subject: '',
+                current_file: (!instance['suggest_ontology']) ? mapping.fileSelected: instance['filenames'][0],
                 files: instance.filenames.map((i: any) => {
                     return {value: i, label: i}
                 })
             }
         });
     }
+
+    // Duplication
+
+        const handleDuplicatedModal = () =>{          
+            if(handleDuplicatedModalCaller === "mapping"){
+                startMapping(duplicatedSelectedClass, duplicatedSelectedIndex);
+                setDuplicatedSelectedClass('');
+                setDuplicatedSelectedIndex(-1);
+            }
+            else if(handleDuplicatedModalCaller === "delete"){
+                startRemoval(duplicatedSelectedClass, duplicatedSelectedIndex);
+                setDuplicatedSelectedClass('');
+                setDuplicatedSelectedIndex(-1);
+            }
+            setDuplicatedModalOpen(false);
+        }
+
+        const getDuplicatedElements = () =>{
+            const listOfDuplications: { value: number; label: number; }[] = []; 
+            if (duplicatedSelectedClass.length > 0){
+                instance['mapping'][duplicatedSelectedClass].map((element: any, i: number) => listOfDuplications.push({value: i, label: i}));
+            }         
+            return listOfDuplications;            
+        }
+
+        const startDuplication = (_class: string, index: number, record: any) => {
+            const mappingElement = instance['mapping'][_class];
+            const newInstance = structuredClone(instance);
+
+            //If the class is currently duplicated.
+            if(Array.isArray(mappingElement)){     
+                const newMappingElement = structuredClone(instance['mapping'][_class][0]);  
+                newMappingElement.columns = {};
+                newMappingElement.subject = undefined;  
+                newInstance['mapping'][_class].push(newMappingElement);
+            }else{ // Is the first time we duplicated the elemente
+                const newMappingElement = structuredClone(mappingElement);
+                newMappingElement.columns = {};
+                newMappingElement.subject = undefined;  
+                newInstance['mapping'][_class] = [mappingElement, newMappingElement];
+            }     
+            
+            setInstance(newInstance);
+
+            instanceService.editInstances(params.id, {mapping: newInstance['mapping']}).catch(err => message.error(err.toString()));      
+        }
+
+        const startRemoval = (_class: string, duplicatedIndex: number) => {
+            const mappingElement = instance['mapping'][_class];
+            const newInstance = structuredClone(instance);
+            if(Array.isArray(mappingElement)){         
+                mappingElement.splice(duplicatedIndex, 1);
+                if(mappingElement.length === 1){
+                    newInstance['mapping'][_class] = mappingElement[0];
+                }else{
+                    newInstance['mapping'][_class] = mappingElement;
+                }                
+                setInstance(newInstance);
+                instanceService.editInstances(params.id, {mapping: newInstance['mapping']}).catch(err => message.error(err.toString()));
+            }    
+        }
 
     const startLink = (relation: any) => {
         navigate('link', {
@@ -397,6 +496,11 @@ const InstanceDetailPage = () => {
                 relation: relation
             }
         })
+    }
+
+    const isDuplicated = (_class: any) => {
+        const mappingElement = instance['mapping'][_class];
+        return Array.isArray(mappingElement);
     }
 
     const navigateToMapping = () => {
@@ -566,7 +670,7 @@ const InstanceDetailPage = () => {
                 <Form.Item name={"select"} label={"Classes"} rules={[{required: true}]}>
                     <Select mode="multiple"                      
                             placeholder="Select the class/es that you would like to map."
-                            options={classes}/>
+                            options={filteredList(classes)}/>
                 </Form.Item>   
             </Form>
             <Divider/>
@@ -613,7 +717,7 @@ const InstanceDetailPage = () => {
                     <Select disabled={!isOntologyReady}
                             mode="multiple"                                                  
                             placeholder="Select the class/es that you would like to map."
-                            options={classes}/>
+                            options={filteredList(classes)}/>
                 </Form.Item>                   
             </Form>    
             <Divider/>
@@ -801,12 +905,33 @@ const InstanceDetailPage = () => {
                             }}
                     />
                     <Column align={"center"} title={"Actions"} render={(value, record, index) => {
-                        return <Space><Tooltip title={"Map"} placement={"bottom"}><Button size={"small"}
+                        return <Space>
+                                        <Tooltip title={"Map"} placement={"bottom"}><Button size={"small"}
                                                                                           shape={"circle"}
                                                                                           icon={<AppstoreAddOutlined/>}
-                                                                                          onClick={() => startMapping(value)}/></Tooltip></Space>
+                                                                                          onClick={() => isDuplicated(value)?prepareDuplicateMapping(value):startMapping(value,-1)}/>
+                                        </Tooltip>
+                                        <Tooltip title={"Duplicate"} placement={"bottom"}><Button size={"small"}
+                                                                                          shape={"circle"}
+                                                                                          icon={<PlusOutlined/>}
+                                                                                          onClick={() => startDuplication(value, index, record)}/>
+                                        </Tooltip>
+                                        {
+                                            isDuplicated(value) && 
+                                            <Tooltip title={"Remove"} placement={"bottom"}><Button size={"small"}
+                                                shape={"circle"}
+                                                icon={<DeleteOutlined />}
+                                                onClick={() => prepareDuplicateRemove(value)}/>
+                                            </Tooltip> 
+                                        }                                        
+
+                                </Space>
                     }}/>
                 </Table>
+                <Modal title="Basic Modal" open={duplicatedModalOpen} onOk={handleDuplicatedModal} onCancel={() => {setDuplicatedModalOpen(false);}}>
+                    <p>There are more than one mapping for this class. Please, select which one do you want to remove</p>
+                    <Select defaultValue={0} options={getDuplicatedElements()} onChange = {(e) => {setDuplicatedSelectedIndex(e)}}/>                    
+                </Modal>
                 <Divider/>
                 <h3><b>Link</b></h3>
                 <Table bordered size={"small"} pagination={{pageSize: 5}} dataSource={relationSearch}
